@@ -528,3 +528,122 @@ line.highlighted {
   pointer-events: none;
   z-index: -1;
 }
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  #header {
+    left: 10px;
+    padding: 12px 14px;
+  }
+
+  #header h1 {
+    font-size: 1rem;
+  }
+
+  #header h1 .subtitle {
+    display: none;
+  }
+
+  .tagline {
+    display: none;
+  }
+
+  #stats {
+    font-size: 0.65rem;
+  }
+
+  #progress-bar {
+    left: 10px;
+    top: 80px;
+    bottom: 40px;
+    width: 12px;
+  }
+
+  #progress-lambda {
+    left: 4px;
+    font-size: 36px;
+  }
+
+  #progress-timestamp {
+    left: 30px;
+    font-size: 0.65rem;
+  }
+
+  #scrub-hint {
+    left: 30px;
+    font-size: 0.6rem;
+  }
+
+  #legend {
+    bottom: 10px;
+    right: 10px;
+    padding: 10px 14px;
+    gap: 6px;
+    font-size: 0.65rem;
+  }
+
+  .legend-title {
+    font-size: 0.6rem;
+  }
+
+  .arrow-icon {
+    font-size: 0.8rem;
+  }
+
+  #bit-panel {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    transform: none;
+    min-width: unset;
+    max-width: unset;
+    padding: 14px 16px;
+  }
+
+  #tooltip {
+    max-width: 200px;
+    font-size: 0.7rem;
+  }
+
+  .node-label {
+    font-size: 7px;
+  }
+
+  .pr-marker-label {
+    display: none;
+  }
+
+  .cite-badge {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  #header h1 {
+    font-size: 0.9rem;
+  }
+
+  #legend {
+    bottom: 6px;
+    right: 6px;
+    padding: 8px 10px;
+    gap: 4px;
+    font-size: 0.6rem;
+  }
+
+  #progress-lambda {
+    font-size: 28px;
+    left: 0;
+  }
+
+  #progress-bar {
+    left: 6px;
+    width: 10px;
+    top: 70px;
+    bottom: 30px;
+  }
+
+  .node-label {
+    font-size: 6px;
+  }
+}

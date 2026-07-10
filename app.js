@@ -8,11 +8,12 @@ const COLORS = {
   theorem: '#ffd54f'
 };
 
+const isMobile = window.innerWidth <= 768;
 const RADIUS = {
-  bool: 28,
-  integer: 34,
-  float: 38,
-  theorem: 44
+  bool: isMobile ? 14 : 28,
+  integer: isMobile ? 16 : 34,
+  float: isMobile ? 18 : 38,
+  theorem: isMobile ? 20 : 44
 };
 
 async function init() {
@@ -154,14 +155,15 @@ function renderGraph(data) {
 
   const simulation = d3.forceSimulation(data.nodes)
     .force('link', d3.forceLink(data.edges).id(d => d.id).distance(d => {
-      if (d.type === 'proves' || d.type === 'depends') return 115;
-      return 90;
+      const base = isMobile ? 50 : 115;
+      const short = isMobile ? 40 : 90;
+      return (d.type === 'proves' || d.type === 'depends') ? base : short;
     }))
-    .force('charge', d3.forceManyBody().strength(-320))
+    .force('charge', d3.forceManyBody().strength(isMobile ? -80 : -320))
     .force('center', d3.forceCenter(width / 2, height / 2))
-    .force('collision', d3.forceCollide().radius(d => RADIUS[d.category] + 16))
-    .force('x', d3.forceX(width / 2).strength(0.04))
-    .force('y', d3.forceY(d => yTiers[d.category] * height).strength(0.14));
+    .force('collision', d3.forceCollide().radius(d => RADIUS[d.category] + (isMobile ? 6 : 16)))
+    .force('x', d3.forceX(width / 2).strength(isMobile ? 0.12 : 0.04))
+    .force('y', d3.forceY(d => yTiers[d.category] * height).strength(isMobile ? 0.25 : 0.14));
 
   // Edges
   const link = svg.append('g')
@@ -601,6 +603,35 @@ function renderGraph(data) {
   });
 
   window.addEventListener('mouseup', () => {
+    if (lambdaDragging) {
+      lambdaDragging = false;
+      const currentY = parseFloat(lambdaEl.style.top);
+      const yPct = ((currentY - BAR_TOP) / getBarHeight()) * 100;
+      if (yPct >= maxPct - 0.5) {
+        applyTimelineState(maxPct);
+      }
+    }
+  });
+
+  // Touch support for lambda scrubber
+  lambdaEl.addEventListener('touchstart', (e) => {
+    lambdaDragging = true;
+    hintEl.style.opacity = '0';
+    e.preventDefault();
+  }, { passive: false });
+
+  window.addEventListener('touchmove', (e) => {
+    if (!lambdaDragging) return;
+    const touch = e.touches[0];
+    const y = Math.max(BAR_TOP, Math.min(maxY, touch.clientY));
+    lambdaEl.style.top = y + 'px';
+    timestampEl.style.top = y + 'px';
+    const yPct = ((y - BAR_TOP) / getBarHeight()) * 100;
+    applyTimelineState(yPct);
+    e.preventDefault();
+  }, { passive: false });
+
+  window.addEventListener('touchend', () => {
     if (lambdaDragging) {
       lambdaDragging = false;
       const currentY = parseFloat(lambdaEl.style.top);
