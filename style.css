@@ -152,8 +152,9 @@ body {
   left: 38px;
   font-size: 52px;
   font-weight: 900;
-  color: #00e5ff;
-  text-shadow: 0 0 10px #00e5ff, 0 0 24px rgba(0, 229, 255, 0.5), 0 0 40px rgba(0, 229, 255, 0.2);
+  color: #ff1744;
+  text-shadow: 0 0 10px #ff1744, 0 0 24px rgba(255, 23, 68, 0.5), 0 0 40px rgba(255, 23, 68, 0.2);
+  -webkit-text-stroke: 2px #000;
   cursor: grab;
   z-index: 300;
   user-select: none;
