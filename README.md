@@ -4,6 +4,9 @@ Interactive visualization of [TensorLib](https://github.com/leanprover/TensorLib
 
 Each node is a dtype or theorem. Edges show cast relationships (lossless/lossy) and proof dependencies. Nodes fill up as PRs merge.
 
+## Access at
+https://smooththunk.github.io/TensorLib-Timeline-Visual/
+
 ## Run locally
 
 ```bash
