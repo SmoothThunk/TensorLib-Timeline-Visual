@@ -1,0 +1,36 @@
+name: Update TensorLib Progress
+
+on:
+  # Run on schedule to pick up merged PRs
+  schedule:
+    - cron: '0 */6 * * *'  # every 6 hours
+  # Manual trigger
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch merged PRs and update data
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Fetch recent merged PRs from TensorLib
+          gh api repos/leanprover/TensorLib/pulls \
+            --jq '[.[] | select(.merged_at != null)] | sort_by(.merged_at) | reverse | .[0:20]' \
+            -q state=closed > /tmp/prs.json
+
+          # Update lastUpdated timestamp
+          node scripts/update-data.js
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git diff --staged --quiet || git commit -m "Auto-update progress data"
+          git push

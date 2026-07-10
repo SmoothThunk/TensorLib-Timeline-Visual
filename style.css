@@ -159,7 +159,7 @@ body {
   user-select: none;
   line-height: 1;
   transform: translateY(-50%);
-  transition: top 0.1s ease-out;
+  transition: none;
 }
 
 #progress-lambda:active {
@@ -322,21 +322,21 @@ body {
 /* Timeline dimming (lambda scrubber) */
 .node-group.timeline-dimmed {
   opacity: 0.12;
-  transition: opacity 0.4s;
+  transition: opacity 0.25s ease;
 }
 
 .node-group.timeline-visible {
   opacity: 1;
-  transition: opacity 0.4s;
+  transition: opacity 0.25s ease;
 }
 
 line.timeline-dimmed {
   stroke-opacity: 0.03 !important;
-  transition: stroke-opacity 0.4s;
+  transition: stroke-opacity 0.25s ease;
 }
 
 line.timeline-visible {
-  transition: stroke-opacity 0.4s;
+  transition: stroke-opacity 0.25s ease;
 }
 
 /* Hover dimming */
