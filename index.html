@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TensorLib - Verified Dtype Universe</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="header">
+    <h1>TensorLib <span class="subtitle">Verified Dtype Universe</span></h1>
+    <p class="tagline">Every cast proven. Every bound mechanized.</p>
+    <div id="legend">
+      <div class="legend-title">KEY</div>
+      <span class="legend-item"><span class="dot dot-integer"></span> Integer</span>
+      <span class="legend-item"><span class="dot dot-float"></span> Float</span>
+      <span class="legend-item"><span class="hex dot-theorem"></span> Theorem</span>
+      <div class="legend-divider"></div>
+      <span class="legend-item"><span class="line-sample line-lossless"></span> <span class="arrow-icon">&rarr;</span> Lossless cast</span>
+      <span class="legend-item"><span class="line-sample line-lossy"></span> <span class="arrow-icon">&rarr;</span> Lossy cast</span>
+      <span class="legend-item"><span class="line-sample line-proves"></span> <span class="arrow-icon">&rarr;</span> Proves</span>
+      <span class="legend-item"><span class="line-sample line-depends"></span> <span class="arrow-icon">&rarr;</span> Depends on</span>
+    </div>
+    <div id="stats"></div>
+  </div>
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+  <span id="progress-lambda">λ</span>
+  <div id="progress-timestamp"></div>
+  <div id="scrub-hint">drag to time-travel</div>
+  <div id="tooltip"></div>
+  <svg id="graph"></svg>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

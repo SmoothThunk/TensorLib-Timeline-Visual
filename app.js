@@ -1,0 +1,471 @@
+// TensorLib Dtype Universe Visualization
+// Fetches data.json and renders an interactive force-directed graph
+
+const COLORS = {
+  integer: '#4fc3f7',
+  float: '#ab47bc',
+  theorem: '#ffd54f'
+};
+
+const RADIUS = {
+  integer: 34,
+  float: 38,
+  theorem: 44
+};
+
+async function init() {
+  const data = await d3.json('data.json');
+  createParticles();
+  renderStats(data);
+  renderGraph(data);
+}
+
+function createParticles() {
+  const container = document.body;
+  for (let i = 0; i < 40; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.animationDuration = (15 + Math.random() * 25) + 's';
+    p.style.animationDelay = Math.random() * 20 + 's';
+    p.style.width = (0.5 + Math.random() * 1.5) + 'px';
+    p.style.height = p.style.width;
+    container.appendChild(p);
+  }
+}
+
+const THEOREM_DESCRIPTIONS = {
+  lossless_antisymmetric: "If type A casts losslessly to B, then B cannot cast losslessly back to A.",
+  cast_roundtrip: "Casting any value to another dtype and back preserves the original.",
+  bf16_roundtrip: "Encoding a UInt16 as BF16, decoding to Float32, and re-encoding gives the same bits.",
+  fp16_roundtrip: "Encoding a UInt16 as FP16, decoding to Float32, and re-encoding gives the same bits.",
+  add_commutative: "a + b == b + a for all bit patterns (including NaN and special values).",
+  fp16_add_identity: "a + 0 == a for all non-NaN FP16 values (±0 excluded from byte equality).",
+  self_cast_roundtrip: "Casting any value to its own dtype and back is always identity.",
+  lossless_cast_roundtrip: "If lossless(from, to) holds, then cast(from→to→from) preserves the value.",
+  cast_zero_one: "0 and 1 round-trip correctly between any two dtype pairs.",
+  join_commutative: "Type promotion is order-independent: join(A,B) == join(B,A).",
+  mixed_precision_bound: "Mechanized error bounds for upcast→compute→downcast mixed-precision pipelines."
+};
+
+function renderStats(data) {
+  const total = data.nodes.length;
+  const complete = data.nodes.filter(n => n.status === 'complete').length;
+  const theorems = data.nodes.filter(n => n.category === 'theorem');
+  const provenTheorems = theorems.filter(n => n.status === 'complete').length;
+  const statsEl = document.getElementById('stats');
+  statsEl.innerHTML = `${complete}/${total} milestones complete &middot; ${provenTheorems}/${theorems.length} theorems proven &middot; <a href="https://github.com/leanprover/TensorLib" target="_blank" style="color:#64b5f6;text-decoration:none;">github.com/leanprover/TensorLib</a>`;
+
+  // Progress bar (vertical)
+  const pct = (complete / total) * 100;
+  const fill = document.getElementById('progress-fill');
+  fill.style.height = pct + '%';
+
+  // Position lambda at current progress (bar starts at 60px, ends at innerHeight-60)
+  const barTop = 60;
+  const barBot = 60;
+  const lambda = document.getElementById('progress-lambda');
+  const barH = window.innerHeight - barTop - barBot;
+  lambda.style.top = (barTop + pct / 100 * barH) + 'px';
+}
+
+function renderGraph(data) {
+  const svg = d3.select('#graph');
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+
+  svg.attr('width', width).attr('height', height);
+
+  // Arrow markers
+  const defs = svg.append('defs');
+  ['lossless', 'lossy', 'proves', 'depends'].forEach(type => {
+    defs.append('marker')
+      .attr('id', `arrow-${type}`)
+      .attr('viewBox', '0 -3 6 6')
+      .attr('refX', 8)
+      .attr('refY', 0)
+      .attr('markerWidth', 5)
+      .attr('markerHeight', 5)
+      .attr('orient', 'auto')
+      .append('path')
+      .attr('d', 'M0,-3L6,0L0,3')
+      .attr('fill', type === 'lossless' ? '#4caf50' :
+                     type === 'lossy' ? '#ff7043' :
+                     type === 'proves' ? '#ffd54f' : '#78909c')
+      .attr('opacity', 0.6);
+  });
+
+  // Glow filter
+  const filter = defs.append('filter').attr('id', 'glow');
+  filter.append('feGaussianBlur').attr('stdDeviation', '3').attr('result', 'blur');
+  filter.append('feMerge').selectAll('feMergeNode')
+    .data(['blur', 'SourceGraphic'])
+    .enter().append('feMergeNode')
+    .attr('in', d => d);
+
+  // Vertical layout: position nodes by category tier
+  const yTiers = {
+    integer: 0.22,
+    float: 0.5,
+    theorem: 0.78
+  };
+
+  const simulation = d3.forceSimulation(data.nodes)
+    .force('link', d3.forceLink(data.edges).id(d => d.id).distance(d => {
+      if (d.type === 'proves' || d.type === 'depends') return 130;
+      return 100;
+    }))
+    .force('charge', d3.forceManyBody().strength(-360))
+    .force('center', d3.forceCenter(width / 2, height / 2))
+    .force('collision', d3.forceCollide().radius(d => RADIUS[d.category] + 18))
+    .force('x', d3.forceX(width / 2).strength(0.035))
+    .force('y', d3.forceY(d => yTiers[d.category] * height).strength(0.13));
+
+  // Edges
+  const link = svg.append('g')
+    .selectAll('line')
+    .data(data.edges)
+    .enter().append('line')
+    .attr('class', d => `edge-${d.type}`)
+    .attr('marker-end', d => `url(#arrow-${d.type})`);
+
+  // Node groups
+  const node = svg.append('g')
+    .selectAll('g')
+    .data(data.nodes)
+    .enter().append('g')
+    .attr('class', d => `node-group ${d.pr ? 'node-recent' : ''}`)
+    .call(d3.drag()
+      .on('start', dragStart)
+      .on('drag', dragging)
+      .on('end', dragEnd));
+
+  // Shape helpers
+  function hexagonPath(r) {
+    const points = [];
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI / 3) * i - Math.PI / 2;
+      points.push(`${r * Math.cos(angle)},${r * Math.sin(angle)}`);
+    }
+    return `M ${points.join(' L ')} Z`;
+  }
+
+  // Background shape (track)
+  node.each(function(d) {
+    const g = d3.select(this);
+    const r = RADIUS[d.category];
+    if (d.category === 'theorem') {
+      g.append('path')
+        .attr('class', 'node-fill-bg')
+        .attr('d', hexagonPath(r))
+        .attr('fill', COLORS[d.category]);
+    } else {
+      g.append('circle')
+        .attr('class', 'node-fill-bg')
+        .attr('r', r)
+        .attr('fill', COLORS[d.category]);
+    }
+  });
+
+  // Progress fill
+  node.each(function(d) {
+    const g = d3.select(this);
+    const r = RADIUS[d.category];
+    const progress = d.status === 'complete' ? 1 :
+                     d.status === 'in_progress' ? 0.6 : 0;
+    if (progress === 0) return;
+
+    if (d.category === 'theorem') {
+      // For hexagons, use clip-path with a rising rectangle
+      const clipId = `clip-${d.id}`;
+      const clipRect = g.append('clipPath').attr('id', clipId)
+        .append('rect')
+        .attr('x', -r)
+        .attr('width', r * 2)
+        .attr('y', r - progress * 2 * r)
+        .attr('height', r * 2);
+      g.append('path')
+        .attr('class', 'node-fill-progress')
+        .attr('d', hexagonPath(r))
+        .attr('fill', COLORS[d.category])
+        .attr('clip-path', `url(#${clipId})`);
+    } else {
+      // Circular progress arc
+      let pathD;
+      if (progress === 1) {
+        pathD = `M 0 ${-r} A ${r} ${r} 0 1 1 -0.001 ${-r} Z`;
+      } else {
+        const angle = progress * 2 * Math.PI - Math.PI / 2;
+        const x = r * Math.cos(angle);
+        const y = r * Math.sin(angle);
+        const largeArc = progress > 0.5 ? 1 : 0;
+        pathD = `M 0 ${-r} A ${r} ${r} 0 ${largeArc} 1 ${x} ${y} L 0 0 Z`;
+      }
+      g.append('path')
+        .attr('class', 'node-fill-progress')
+        .attr('fill', COLORS[d.category])
+        .attr('d', pathD);
+    }
+  });
+
+  // Ring / outline
+  node.each(function(d) {
+    const g = d3.select(this);
+    const r = RADIUS[d.category];
+    if (d.category === 'theorem') {
+      g.append('path')
+        .attr('class', 'node-ring')
+        .attr('d', hexagonPath(r))
+        .attr('stroke', COLORS[d.category])
+        .style('color', COLORS[d.category]);
+    } else {
+      g.append('circle')
+        .attr('class', 'node-ring')
+        .attr('r', r)
+        .attr('stroke', COLORS[d.category])
+        .style('color', COLORS[d.category]);
+    }
+  });
+
+  // Label
+  node.each(function(d) {
+    const lines = d.label.split('\n');
+    const g = d3.select(this);
+    lines.forEach((line, i) => {
+      g.append('text')
+        .attr('class', 'node-label')
+        .attr('dy', (i - (lines.length - 1) / 2) * 11 + 3)
+        .text(line);
+    });
+  });
+
+  // Tooltip
+  const tooltip = document.getElementById('tooltip');
+
+  node.on('mouseenter', (event, d) => {
+    const statusLabel = d.status.replace('_', ' ');
+    let html = `<div class="tt-title">${d.label.replace('\n', ' ')}</div>`;
+    html += `<span class="tt-status ${d.status}">${statusLabel}</span>`;
+    if (d.category === 'theorem' && THEOREM_DESCRIPTIONS[d.id]) {
+      html += `<div style="margin-top:8px;font-style:italic;opacity:0.85;">${THEOREM_DESCRIPTIONS[d.id]}</div>`;
+    } else {
+      html += `<div style="margin-top:6px;opacity:0.7;">Category: ${d.category}</div>`;
+    }
+    if (d.pr) {
+      html += `<div class="tt-pr">PR: <a href="https://github.com/leanprover/TensorLib/pull/${d.pr}" target="_blank">#${d.pr}</a></div>`;
+    }
+    tooltip.innerHTML = html;
+    tooltip.classList.add('visible');
+
+    // Highlight connected nodes and edges, dim the rest
+    const connectedIds = new Set([d.id]);
+    data.edges.forEach(e => {
+      const sid = e.source.id || e.source;
+      const tid = e.target.id || e.target;
+      if (sid === d.id) connectedIds.add(tid);
+      if (tid === d.id) connectedIds.add(sid);
+    });
+
+    node.classed('highlighted', n => connectedIds.has(n.id));
+    node.classed('dimmed', n => !connectedIds.has(n.id));
+
+    link.classed('highlighted', e => {
+      const sid = e.source.id || e.source;
+      const tid = e.target.id || e.target;
+      return sid === d.id || tid === d.id;
+    });
+    link.classed('dimmed', e => {
+      const sid = e.source.id || e.source;
+      const tid = e.target.id || e.target;
+      return sid !== d.id && tid !== d.id;
+    });
+  })
+  .on('mousemove', (event) => {
+    tooltip.style.left = (event.clientX + 14) + 'px';
+    tooltip.style.top = (event.clientY - 10) + 'px';
+  })
+  .on('mouseleave', () => {
+    tooltip.classList.remove('visible');
+    // Reset all highlights
+    node.classed('highlighted', false);
+    node.classed('dimmed', false);
+    link.classed('highlighted', false);
+    link.classed('dimmed', false);
+  })
+  .on('click', (event, d) => {
+    if (d.pr) {
+      window.open(`https://github.com/leanprover/TensorLib/pull/${d.pr}`, '_blank');
+    }
+  });
+
+  // Simulation tick
+  simulation.on('tick', () => {
+    link
+      .attr('x1', d => d.source.x)
+      .attr('y1', d => d.source.y)
+      .attr('x2', d => {
+        const dx = d.target.x - d.source.x;
+        const dy = d.target.y - d.source.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const r = RADIUS[d.target.category] || 22;
+        return d.target.x - (dx / dist) * r;
+      })
+      .attr('y2', d => {
+        const dx = d.target.x - d.source.x;
+        const dy = d.target.y - d.source.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const r = RADIUS[d.target.category] || 22;
+        return d.target.y - (dy / dist) * r;
+      });
+
+    node.attr('transform', d => `translate(${d.x},${d.y})`);
+  });
+
+  // Drag handlers
+  function dragStart(event, d) {
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+
+  function dragging(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
+  }
+
+  function dragEnd(event, d) {
+    if (!event.active) simulation.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+  }
+
+  // Resize handler
+  window.addEventListener('resize', () => {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    svg.attr('width', w).attr('height', h);
+    simulation.force('center', d3.forceCenter(w / 2, h / 2));
+    simulation.force('y', d3.forceY(d => yTiers[d.category] * h).strength(0.15));
+    simulation.alpha(0.3).restart();
+  });
+
+  // Lambda scrubber — vertical time-travel slider
+  const lambdaEl = document.getElementById('progress-lambda');
+  const timestampEl = document.getElementById('progress-timestamp');
+  const BAR_TOP = 60;
+  const BAR_BOT = 60;
+  const getBarHeight = () => window.innerHeight - BAR_TOP - BAR_BOT;
+  const total = data.nodes.length;
+  const complete = data.nodes.filter(n => n.status === 'complete').length;
+  const maxPct = (complete / total) * 100;
+
+  // Timeline order: topological sort respecting dependencies, then by status
+  // Nodes with unresolved dependencies always come after their deps
+  const depMap = {};
+  data.edges.filter(e => e.type === 'depends').forEach(e => {
+    const tid = e.target.id || e.target;
+    const sid = e.source.id || e.source;
+    if (!depMap[tid]) depMap[tid] = [];
+    depMap[tid].push(sid);
+  });
+
+  function getDepth(id, visited = new Set()) {
+    if (visited.has(id)) return 0;
+    visited.add(id);
+    const deps = depMap[id] || [];
+    if (deps.length === 0) return 0;
+    return 1 + Math.max(...deps.map(d => getDepth(d, visited)));
+  }
+
+  const timeline = [...data.nodes].sort((a, b) => {
+    const statusOrder = { complete: 0, in_progress: 1, planned: 2 };
+    const sa = statusOrder[a.status] || 3;
+    const sb = statusOrder[b.status] || 3;
+    if (sa !== sb) return sa - sb;
+    // Within same status, sort by dependency depth (fewer deps first)
+    return getDepth(a.id) - getDepth(b.id);
+  });
+
+  function getVisibleIdsAtPosition(yPct) {
+    const effectivePct = Math.min(yPct, maxPct);
+    const ratio = maxPct > 0 ? effectivePct / maxPct : 1;
+    const count = Math.round(ratio * timeline.length);
+    return new Set(timeline.slice(0, count).map(n => n.id));
+  }
+
+  function applyTimelineState(yPct) {
+    const atMax = yPct >= maxPct - 0.5;
+    const visibleIds = atMax ? new Set(data.nodes.map(n => n.id)) : getVisibleIdsAtPosition(yPct);
+
+    node.classed('timeline-dimmed', n => !visibleIds.has(n.id));
+    node.classed('timeline-visible', n => visibleIds.has(n.id));
+
+    link.classed('timeline-dimmed', e => {
+      const sid = e.source.id || e.source;
+      const tid = e.target.id || e.target;
+      return !visibleIds.has(sid) || !visibleIds.has(tid);
+    });
+    link.classed('timeline-visible', e => {
+      const sid = e.source.id || e.source;
+      const tid = e.target.id || e.target;
+      return visibleIds.has(sid) && visibleIds.has(tid);
+    });
+
+    if (!atMax) {
+      const count = Math.round((Math.min(yPct, maxPct) / maxPct) * timeline.length);
+      const visible = timeline.slice(0, count);
+      const completeVisible = visible.filter(n => n.status === 'complete').length;
+      const recent = visible.slice(-3).map(n => n.label.replace('\n', ' '));
+      timestampEl.textContent = `${completeVisible}/${total} complete — ${recent.join(', ')}`;
+      timestampEl.classList.add('visible');
+    } else {
+      timestampEl.classList.remove('visible');
+    }
+  }
+
+  let lambdaDragging = false;
+
+  const hintEl = document.getElementById('scrub-hint');
+
+  lambdaEl.addEventListener('mouseenter', () => {
+    if (!lambdaDragging) {
+      hintEl.style.top = lambdaEl.style.top;
+      hintEl.style.opacity = '1';
+    }
+  });
+
+  lambdaEl.addEventListener('mouseleave', () => {
+    hintEl.style.opacity = '0';
+  });
+
+  lambdaEl.addEventListener('mousedown', (e) => {
+    lambdaDragging = true;
+    hintEl.style.opacity = '0';
+    e.preventDefault();
+  });
+
+  const maxY = BAR_TOP + (maxPct / 100) * getBarHeight();
+
+  window.addEventListener('mousemove', (e) => {
+    if (!lambdaDragging) return;
+    const y = Math.max(BAR_TOP, Math.min(maxY, e.clientY));
+    lambdaEl.style.top = y + 'px';
+    timestampEl.style.top = y + 'px';
+    const yPct = ((y - BAR_TOP) / getBarHeight()) * 100;
+    applyTimelineState(yPct);
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (lambdaDragging) {
+      lambdaDragging = false;
+      const currentY = parseFloat(lambdaEl.style.top);
+      const yPct = ((currentY - BAR_TOP) / getBarHeight()) * 100;
+      if (yPct >= maxPct - 0.5) {
+        applyTimelineState(maxPct);
+      }
+    }
+  });
+}
+
+// Boot
+init();

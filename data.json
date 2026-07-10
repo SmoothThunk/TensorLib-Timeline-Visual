@@ -1,0 +1,228 @@
+{
+  "meta": {
+    "repo": "leanprover/TensorLib",
+    "lastUpdated": "2026-07-09T00:00:00Z"
+  },
+  "nodes": [
+    {
+      "id": "bool",
+      "label": "Bool",
+      "category": "integer",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "int8",
+      "label": "Int8",
+      "category": "integer",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "uint8",
+      "label": "UInt8",
+      "category": "integer",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "int16",
+      "label": "Int16",
+      "category": "integer",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "uint16",
+      "label": "UInt16",
+      "category": "integer",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "int32",
+      "label": "Int32",
+      "category": "integer",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "uint32",
+      "label": "UInt32",
+      "category": "integer",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "int64",
+      "label": "Int64",
+      "category": "integer",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "uint64",
+      "label": "UInt64",
+      "category": "integer",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "float16",
+      "label": "FP16",
+      "category": "float",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "bfloat16",
+      "label": "BF16",
+      "category": "float",
+      "status": "complete",
+      "pr": 94
+    },
+    {
+      "id": "float32",
+      "label": "FP32",
+      "category": "float",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "float64",
+      "label": "FP64",
+      "category": "float",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "float8",
+      "label": "FP8",
+      "category": "float",
+      "status": "planned",
+      "pr": null
+    },
+    {
+      "id": "lossless_antisymmetric",
+      "label": "Lossless\nAntiSymmetric",
+      "category": "theorem",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "cast_roundtrip",
+      "label": "Cast\nRound-Trip",
+      "category": "theorem",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "bf16_roundtrip",
+      "label": "BF16\nRound-Trip",
+      "category": "theorem",
+      "status": "complete",
+      "pr": 94
+    },
+    {
+      "id": "add_commutative",
+      "label": "Add\nCommutative",
+      "category": "theorem",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "fp16_add_identity",
+      "label": "FP16 Add\nIdentity",
+      "category": "theorem",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "fp16_roundtrip",
+      "label": "FP16\nRound-Trip",
+      "category": "theorem",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "self_cast_roundtrip",
+      "label": "Self Cast\nRound-Trip",
+      "category": "theorem",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "lossless_cast_roundtrip",
+      "label": "Lossless Cast\nRound-Trip",
+      "category": "theorem",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "cast_zero_one",
+      "label": "Cast\nZero/One",
+      "category": "theorem",
+      "status": "complete",
+      "pr": null
+    },
+    {
+      "id": "join_commutative",
+      "label": "Join\nCommutative",
+      "category": "theorem",
+      "status": "in_progress",
+      "pr": null
+    },
+    {
+      "id": "mixed_precision_bound",
+      "label": "Mixed Precision\nError Bound",
+      "category": "theorem",
+      "status": "planned",
+      "pr": null
+    }
+  ],
+  "edges": [
+    { "source": "int8", "target": "bfloat16", "type": "lossless", "verified": true },
+    { "source": "int8", "target": "float16", "type": "lossless", "verified": true },
+    { "source": "int8", "target": "float32", "type": "lossless", "verified": true },
+    { "source": "int8", "target": "int16", "type": "lossless", "verified": true },
+    { "source": "uint8", "target": "bfloat16", "type": "lossless", "verified": true },
+    { "source": "uint8", "target": "float16", "type": "lossless", "verified": true },
+    { "source": "uint8", "target": "float32", "type": "lossless", "verified": true },
+    { "source": "uint8", "target": "uint16", "type": "lossless", "verified": true },
+    { "source": "int16", "target": "float32", "type": "lossless", "verified": true },
+    { "source": "int16", "target": "int32", "type": "lossless", "verified": true },
+    { "source": "uint16", "target": "float32", "type": "lossless", "verified": true },
+    { "source": "uint16", "target": "uint32", "type": "lossless", "verified": true },
+    { "source": "int32", "target": "float64", "type": "lossless", "verified": true },
+    { "source": "int32", "target": "int64", "type": "lossless", "verified": true },
+    { "source": "uint32", "target": "float64", "type": "lossless", "verified": true },
+    { "source": "uint32", "target": "uint64", "type": "lossless", "verified": true },
+    { "source": "float16", "target": "float32", "type": "lossless", "verified": true },
+    { "source": "float16", "target": "float64", "type": "lossless", "verified": true },
+    { "source": "bfloat16", "target": "float32", "type": "lossless", "verified": true },
+    { "source": "bfloat16", "target": "float64", "type": "lossless", "verified": true },
+    { "source": "float32", "target": "float64", "type": "lossless", "verified": true },
+    { "source": "float32", "target": "float16", "type": "lossy", "verified": true },
+    { "source": "float32", "target": "bfloat16", "type": "lossy", "verified": true },
+    { "source": "float64", "target": "float32", "type": "lossy", "verified": true },
+    { "source": "int16", "target": "bfloat16", "type": "lossy", "verified": true },
+    { "source": "bfloat16", "target": "float16", "type": "lossy", "verified": true },
+    { "source": "float16", "target": "bfloat16", "type": "lossy", "verified": true },
+    { "source": "bfloat16", "target": "bf16_roundtrip", "type": "proves", "verified": true },
+    { "source": "float16", "target": "fp16_roundtrip", "type": "proves", "verified": true },
+    { "source": "float16", "target": "add_commutative", "type": "proves", "verified": true },
+    { "source": "bfloat16", "target": "add_commutative", "type": "proves", "verified": true },
+    { "source": "float16", "target": "fp16_add_identity", "type": "proves", "verified": true },
+    { "source": "lossless_antisymmetric", "target": "lossless_cast_roundtrip", "type": "depends", "verified": true },
+    { "source": "self_cast_roundtrip", "target": "lossless_cast_roundtrip", "type": "depends", "verified": true },
+    { "source": "cast_zero_one", "target": "self_cast_roundtrip", "type": "depends", "verified": true },
+    { "source": "lossless_antisymmetric", "target": "cast_roundtrip", "type": "depends", "verified": true },
+    { "source": "lossless_cast_roundtrip", "target": "mixed_precision_bound", "type": "depends", "verified": false },
+    { "source": "cast_roundtrip", "target": "mixed_precision_bound", "type": "depends", "verified": false },
+    { "source": "join_commutative", "target": "mixed_precision_bound", "type": "depends", "verified": false },
+    { "source": "float8", "target": "mixed_precision_bound", "type": "depends", "verified": false },
+    { "source": "float32", "target": "mixed_precision_bound", "type": "depends", "verified": false },
+    { "source": "float16", "target": "mixed_precision_bound", "type": "depends", "verified": false },
+    { "source": "bfloat16", "target": "mixed_precision_bound", "type": "depends", "verified": false }
+  ]
+}
