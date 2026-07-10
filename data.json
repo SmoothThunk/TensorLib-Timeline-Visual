@@ -7,7 +7,7 @@
     {
       "id": "bool",
       "label": "Bool",
-      "category": "integer",
+      "category": "bool",
       "status": "complete",
       "pr": null
     },
@@ -72,7 +72,7 @@
       "label": "FP16",
       "category": "float",
       "status": "complete",
-      "pr": null
+      "pr": 92
     },
     {
       "id": "bfloat16",

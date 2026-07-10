@@ -2,12 +2,14 @@
 // Fetches data.json and renders an interactive force-directed graph
 
 const COLORS = {
+  bool: '#66bb6a',
   integer: '#4fc3f7',
   float: '#ab47bc',
   theorem: '#ffd54f'
 };
 
 const RADIUS = {
+  bool: 28,
   integer: 34,
   float: 38,
   theorem: 44
@@ -33,6 +35,28 @@ function createParticles() {
     container.appendChild(p);
   }
 }
+
+const BIT_LAYOUTS = {
+  bool:    { bits: 8,  layout: [{label: 'value', bits: 8, color: '#66bb6a'}] },
+  int8:    { bits: 8,  layout: [{label: 'sign', bits: 1, color: '#ef5350'}, {label: 'magnitude', bits: 7, color: '#4fc3f7'}] },
+  uint8:   { bits: 8,  layout: [{label: 'value', bits: 8, color: '#4fc3f7'}] },
+  int16:   { bits: 16, layout: [{label: 'sign', bits: 1, color: '#ef5350'}, {label: 'magnitude', bits: 15, color: '#4fc3f7'}] },
+  uint16:  { bits: 16, layout: [{label: 'value', bits: 16, color: '#4fc3f7'}] },
+  int32:   { bits: 32, layout: [{label: 'sign', bits: 1, color: '#ef5350'}, {label: 'magnitude', bits: 31, color: '#4fc3f7'}] },
+  uint32:  { bits: 32, layout: [{label: 'value', bits: 32, color: '#4fc3f7'}] },
+  int64:   { bits: 64, layout: [{label: 'sign', bits: 1, color: '#ef5350'}, {label: 'magnitude', bits: 63, color: '#4fc3f7'}] },
+  uint64:  { bits: 64, layout: [{label: 'value', bits: 64, color: '#4fc3f7'}] },
+  float16: { bits: 16, layout: [{label: 'sign', bits: 1, color: '#ef5350'}, {label: 'exp', bits: 5, color: '#ffa726'}, {label: 'mantissa', bits: 10, color: '#ab47bc'}] },
+  bfloat16:{ bits: 16, layout: [{label: 'sign', bits: 1, color: '#ef5350'}, {label: 'exp', bits: 8, color: '#ffa726'}, {label: 'mantissa', bits: 7, color: '#ab47bc'}] },
+  float32: { bits: 32, layout: [{label: 'sign', bits: 1, color: '#ef5350'}, {label: 'exp', bits: 8, color: '#ffa726'}, {label: 'mantissa', bits: 23, color: '#ab47bc'}] },
+  float64: { bits: 64, layout: [{label: 'sign', bits: 1, color: '#ef5350'}, {label: 'exp', bits: 11, color: '#ffa726'}, {label: 'mantissa', bits: 52, color: '#ab47bc'}] },
+  float8:  { bits: 8,  layout: [{label: 'sign', bits: 1, color: '#ef5350'}, {label: 'exp', bits: 4, color: '#ffa726'}, {label: 'mantissa', bits: 3, color: '#ab47bc'}] },
+};
+
+const PR_TIMELINE = [
+  { pr: 92, title: "Float16 support", date: "2026-06" },
+  { pr: 94, title: "BFloat16 support", date: "2026-07" },
+];
 
 const THEOREM_DESCRIPTIONS = {
   lossless_antisymmetric: "If type A casts losslessly to B, then B cannot cast losslessly back to A.",
@@ -105,21 +129,22 @@ function renderGraph(data) {
 
   // Vertical layout: position nodes by category tier
   const yTiers = {
-    integer: 0.22,
-    float: 0.5,
-    theorem: 0.78
+    bool: 0.17,
+    integer: 0.33,
+    float: 0.52,
+    theorem: 0.75
   };
 
   const simulation = d3.forceSimulation(data.nodes)
     .force('link', d3.forceLink(data.edges).id(d => d.id).distance(d => {
-      if (d.type === 'proves' || d.type === 'depends') return 130;
-      return 100;
+      if (d.type === 'proves' || d.type === 'depends') return 115;
+      return 90;
     }))
-    .force('charge', d3.forceManyBody().strength(-360))
+    .force('charge', d3.forceManyBody().strength(-320))
     .force('center', d3.forceCenter(width / 2, height / 2))
-    .force('collision', d3.forceCollide().radius(d => RADIUS[d.category] + 18))
-    .force('x', d3.forceX(width / 2).strength(0.035))
-    .force('y', d3.forceY(d => yTiers[d.category] * height).strength(0.13));
+    .force('collision', d3.forceCollide().radius(d => RADIUS[d.category] + 16))
+    .force('x', d3.forceX(width / 2).strength(0.04))
+    .force('y', d3.forceY(d => yTiers[d.category] * height).strength(0.14));
 
   // Edges
   const link = svg.append('g')
@@ -293,7 +318,55 @@ function renderGraph(data) {
     link.classed('dimmed', false);
   })
   .on('click', (event, d) => {
-    if (d.pr) {
+    const panel = document.getElementById('bit-panel');
+    const layout = BIT_LAYOUTS[d.id];
+
+    if (layout) {
+      // Show bit layout panel
+      document.getElementById('bit-panel-title').textContent = `${d.label.replace('\n', ' ')} — ${layout.bits} bits`;
+
+      const layoutEl = document.getElementById('bit-panel-layout');
+      layoutEl.innerHTML = '';
+      layout.layout.forEach(seg => {
+        const div = document.createElement('div');
+        div.className = 'bit-segment';
+        div.style.flex = seg.bits;
+        div.style.background = seg.color;
+        div.textContent = seg.bits;
+        const lbl = document.createElement('span');
+        lbl.className = 'bit-segment-label';
+        lbl.textContent = seg.label;
+        div.appendChild(lbl);
+        layoutEl.appendChild(div);
+      });
+
+      let details = '';
+      if (d.category === 'float') {
+        const expBits = layout.layout.find(s => s.label === 'exp');
+        const manBits = layout.layout.find(s => s.label === 'mantissa');
+        if (expBits && manBits) {
+          const precision = manBits.bits + 1;
+          const maxExp = Math.pow(2, expBits.bits - 1) - 1;
+          details = `Precision: ${precision} bits (${Math.floor(precision * Math.log10(2))} decimal digits) · Exponent range: ±${maxExp}`;
+        }
+      } else if (d.category === 'integer') {
+        const signed = d.id.startsWith('int');
+        const bits = layout.bits;
+        if (signed) {
+          details = `Range: -${Math.pow(2, bits-1)} to ${Math.pow(2, bits-1) - 1}`;
+        } else {
+          details = `Range: 0 to ${Math.pow(2, bits) - 1}`;
+        }
+      } else if (d.category === 'bool') {
+        details = 'Values: 0 (false) or 1 (true)';
+      }
+      if (d.pr) {
+        details += ` · <a href="https://github.com/leanprover/TensorLib/pull/${d.pr}" target="_blank" style="color:#64b5f6;">PR #${d.pr}</a>`;
+      }
+      document.getElementById('bit-panel-details').innerHTML = details;
+
+      panel.classList.add('visible');
+    } else if (d.pr) {
       window.open(`https://github.com/leanprover/TensorLib/pull/${d.pr}`, '_blank');
     }
   });
@@ -338,6 +411,27 @@ function renderGraph(data) {
     d.fx = null;
     d.fy = null;
   }
+
+  // Bit panel close
+  document.getElementById('bit-panel-close').addEventListener('click', () => {
+    document.getElementById('bit-panel').classList.remove('visible');
+  });
+
+  // PR timeline markers on the progress bar
+  const markersEl = document.getElementById('pr-markers');
+  const barHeightForMarkers = window.innerHeight - 120; // 60px top + 60px bottom
+  PR_TIMELINE.forEach((pr, i) => {
+    // Distribute markers evenly based on timeline order
+    const position = ((i + 1) / (PR_TIMELINE.length + 1)) * 100;
+    const marker = document.createElement('div');
+    marker.className = 'pr-marker';
+    marker.style.top = position + '%';
+    marker.innerHTML = `<span class="pr-marker-label">#${pr.pr} ${pr.title} (${pr.date})</span>`;
+    marker.addEventListener('click', () => {
+      window.open(`https://github.com/leanprover/TensorLib/pull/${pr.pr}`, '_blank');
+    });
+    markersEl.appendChild(marker);
+  });
 
   // Resize handler
   window.addEventListener('resize', () => {

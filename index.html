@@ -12,21 +12,27 @@
     <p class="tagline">Every cast proven. Every bound mechanized.</p>
     <div id="legend">
       <div class="legend-title">KEY</div>
+      <span class="legend-item"><span class="dot dot-bool"></span> Bool</span>
       <span class="legend-item"><span class="dot dot-integer"></span> Integer</span>
       <span class="legend-item"><span class="dot dot-float"></span> Float</span>
       <span class="legend-item"><span class="hex dot-theorem"></span> Theorem</span>
       <div class="legend-divider"></div>
       <span class="legend-item"><span class="line-sample line-lossless"></span> <span class="arrow-icon">&rarr;</span> Lossless cast</span>
-      <span class="legend-item"><span class="line-sample line-lossy"></span> <span class="arrow-icon">&rarr;</span> Lossy cast</span>
       <span class="legend-item"><span class="line-sample line-proves"></span> <span class="arrow-icon">&rarr;</span> Proves</span>
       <span class="legend-item"><span class="line-sample line-depends"></span> <span class="arrow-icon">&rarr;</span> Depends on</span>
     </div>
     <div id="stats"></div>
   </div>
-  <div id="progress-bar"><div id="progress-fill"></div></div>
+  <div id="progress-bar"><div id="progress-fill"></div><div id="pr-markers"></div></div>
   <span id="progress-lambda">λ</span>
   <div id="progress-timestamp"></div>
   <div id="scrub-hint">drag to time-travel</div>
+  <div id="bit-panel">
+    <div id="bit-panel-title"></div>
+    <div id="bit-panel-layout"></div>
+    <div id="bit-panel-details"></div>
+    <div id="bit-panel-close">&times;</div>
+  </div>
   <div id="tooltip"></div>
   <svg id="graph"></svg>
   <script src="https://d3js.org/d3.v7.min.js"></script>
