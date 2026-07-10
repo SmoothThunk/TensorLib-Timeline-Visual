@@ -267,6 +267,28 @@ body {
   text-decoration: none;
 }
 
+#tooltip .tt-cites {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+#tooltip .tt-cite {
+  margin-top: 4px;
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+#tooltip .tt-cite a {
+  color: #ff8a65;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.cite-badge {
+  filter: drop-shadow(0 0 4px rgba(255, 138, 101, 0.5));
+}
+
 /* Bit layout panel */
 #bit-panel {
   position: fixed;

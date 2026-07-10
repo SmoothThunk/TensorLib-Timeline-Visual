@@ -58,6 +58,23 @@ const PR_TIMELINE = [
   { pr: 94, title: "BFloat16 support", date: "2026-07" },
 ];
 
+const CITATIONS = {
+  float16: [
+    { id: 1, short: "Boldo+2015", title: "Innocuous Double Rounding (HAL)", url: "https://hal.science/hal-01091186v1/document", note: "Proves fp32 arithmetic on fp16 operands = fp16 arithmetic (Theorem 20)" },
+    { id: 2, short: "IEEE 754-2019", title: "IEEE 754-2019 Standard for Floating-Point Arithmetic", url: "https://ieeexplore.ieee.org/document/8766229", note: "Defines fp16 format, rounding modes, and special values" }
+  ],
+  bfloat16: [
+    { id: 1, short: "Boldo+2015", title: "Innocuous Double Rounding (HAL)", url: "https://hal.science/hal-01091186v1/document", note: "Proves fp32 arithmetic on bf16 operands = bf16 arithmetic (Theorem 20)" },
+    { id: 2, short: "IEEE 754-2019", title: "IEEE 754-2019 Standard for Floating-Point Arithmetic", url: "https://ieeexplore.ieee.org/document/8766229", note: "Defines floating-point semantics used by bf16's exponent/mantissa split" }
+  ],
+  add_commutative: [
+    { id: 1, short: "Boldo+2015", title: "Innocuous Double Rounding (HAL)", url: "https://hal.science/hal-01091186v1/document", note: "Guarantees upcast→compute→downcast matches native precision" }
+  ],
+  fp16_add_identity: [
+    { id: 2, short: "IEEE 754-2019", title: "IEEE 754-2019 Standard for Floating-Point Arithmetic", url: "https://ieeexplore.ieee.org/document/8766229", note: "Defines additive identity and NaN behavior" }
+  ]
+};
+
 const THEOREM_DESCRIPTIONS = {
   lossless_antisymmetric: "If type A casts losslessly to B, then B cannot cast losslessly back to A.",
   cast_roundtrip: "Casting any value to another dtype and back preserves the original.",
@@ -264,6 +281,32 @@ function renderGraph(data) {
     });
   });
 
+  // Citation badges
+  node.each(function(d) {
+    const cites = CITATIONS[d.id];
+    if (!cites || cites.length === 0) return;
+    const g = d3.select(this);
+    const r = RADIUS[d.category];
+    g.append('circle')
+      .attr('class', 'cite-badge')
+      .attr('cx', r - 4)
+      .attr('cy', -r + 4)
+      .attr('r', 8)
+      .attr('fill', '#ff8a65')
+      .attr('stroke', '#0a0e1a')
+      .attr('stroke-width', 1.5);
+    g.append('text')
+      .attr('class', 'cite-badge-text')
+      .attr('x', r - 4)
+      .attr('y', -r + 8)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '8px')
+      .attr('font-weight', '700')
+      .attr('fill', '#fff')
+      .attr('pointer-events', 'none')
+      .text(cites.length);
+  });
+
   // Tooltip
   const tooltip = document.getElementById('tooltip');
 
@@ -278,6 +321,14 @@ function renderGraph(data) {
     }
     if (d.pr) {
       html += `<div class="tt-pr">PR: <a href="https://github.com/leanprover/TensorLib/pull/${d.pr}" target="_blank">#${d.pr}</a></div>`;
+    }
+    const cites = CITATIONS[d.id];
+    if (cites && cites.length > 0) {
+      html += `<div class="tt-cites">`;
+      cites.forEach(c => {
+        html += `<div class="tt-cite"><a href="${c.url}" target="_blank">[${c.id}]</a> ${c.short} — <span style="opacity:0.7">${c.note}</span></div>`;
+      });
+      html += `</div>`;
     }
     tooltip.innerHTML = html;
     tooltip.classList.add('visible');
