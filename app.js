@@ -8,13 +8,18 @@ const COLORS = {
   theorem: '#ffd54f'
 };
 
-const isMobile = window.innerWidth <= 768;
-const RADIUS = {
-  bool: isMobile ? 14 : 28,
-  integer: isMobile ? 16 : 34,
-  float: isMobile ? 18 : 38,
-  theorem: isMobile ? 20 : 44
-};
+let isMobile = window.innerWidth <= 768;
+
+function computeRadius() {
+  return {
+    bool: isMobile ? 14 : 28,
+    integer: isMobile ? 16 : 34,
+    float: isMobile ? 18 : 38,
+    theorem: isMobile ? 20 : 44
+  };
+}
+
+let RADIUS = computeRadius();
 
 async function init() {
   const data = await d3.json('data.json');
@@ -90,6 +95,22 @@ const THEOREM_DESCRIPTIONS = {
   mixed_precision_bound: "Mechanized error bounds for upcast→compute→downcast mixed-precision pipelines."
 };
 
+function getBarOffsets() {
+  const bar = document.getElementById('progress-bar');
+  if (bar) {
+    const style = getComputedStyle(bar);
+    const top = parseFloat(style.top) || 60;
+    const bottom = parseFloat(style.bottom) || 60;
+    return { top, bottom };
+  }
+  return { top: 60, bottom: 60 };
+}
+
+function getBarHeight() {
+  const offsets = getBarOffsets();
+  return window.innerHeight - offsets.top - offsets.bottom;
+}
+
 function renderStats(data) {
   const total = data.nodes.length;
   const complete = data.nodes.filter(n => n.status === 'complete').length;
@@ -98,17 +119,14 @@ function renderStats(data) {
   const statsEl = document.getElementById('stats');
   statsEl.innerHTML = `${complete}/${total} milestones complete &middot; ${provenTheorems}/${theorems.length} theorems proven &middot; <a href="https://github.com/leanprover/TensorLib" target="_blank" style="color:#64b5f6;text-decoration:none;">github.com/leanprover/TensorLib</a>`;
 
-  // Progress bar (vertical)
   const pct = (complete / total) * 100;
   const fill = document.getElementById('progress-fill');
   fill.style.height = pct + '%';
 
-  // Position lambda at current progress (bar starts at 60px, ends at innerHeight-60)
-  const barTop = 60;
-  const barBot = 60;
+  const offsets = getBarOffsets();
   const lambda = document.getElementById('progress-lambda');
-  const barH = window.innerHeight - barTop - barBot;
-  lambda.style.top = (barTop + pct / 100 * barH) + 'px';
+  const barH = getBarHeight();
+  lambda.style.top = (offsets.top + pct / 100 * barH) + 'px';
 }
 
 function renderGraph(data) {
@@ -147,8 +165,8 @@ function renderGraph(data) {
 
   // Vertical layout: position nodes by category tier
   const yTiers = {
-    bool: 0.17,
-    integer: 0.33,
+    bool: 0.25,
+    integer: 0.37,
     float: 0.52,
     theorem: 0.75
   };
@@ -472,9 +490,7 @@ function renderGraph(data) {
 
   // PR timeline markers on the progress bar
   const markersEl = document.getElementById('pr-markers');
-  const barHeightForMarkers = window.innerHeight - 120; // 60px top + 60px bottom
   PR_TIMELINE.forEach((pr, i) => {
-    // Distribute markers evenly based on timeline order
     const position = ((i + 1) / (PR_TIMELINE.length + 1)) * 100;
     const marker = document.createElement('div');
     marker.className = 'pr-marker';
@@ -486,22 +502,9 @@ function renderGraph(data) {
     markersEl.appendChild(marker);
   });
 
-  // Resize handler
-  window.addEventListener('resize', () => {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    svg.attr('width', w).attr('height', h);
-    simulation.force('center', d3.forceCenter(w / 2, h / 2));
-    simulation.force('y', d3.forceY(d => yTiers[d.category] * h).strength(0.15));
-    simulation.alpha(0.3).restart();
-  });
-
   // Lambda scrubber — vertical time-travel slider
   const lambdaEl = document.getElementById('progress-lambda');
   const timestampEl = document.getElementById('progress-timestamp');
-  const BAR_TOP = 60;
-  const BAR_BOT = 60;
-  const getBarHeight = () => window.innerHeight - BAR_TOP - BAR_BOT;
   const total = data.nodes.length;
   const complete = data.nodes.filter(n => n.status === 'complete').length;
   const maxPct = (complete / total) * 100;
@@ -591,27 +594,38 @@ function renderGraph(data) {
     e.preventDefault();
   });
 
-  const maxY = BAR_TOP + (maxPct / 100) * getBarHeight();
+  function getMaxY() {
+    return getBarOffsets().top + (maxPct / 100) * getBarHeight();
+  }
 
-  window.addEventListener('mousemove', (e) => {
-    if (!lambdaDragging) return;
-    const y = Math.max(BAR_TOP, Math.min(maxY, e.clientY));
+  function handleDragMove(clientY) {
+    const offsets = getBarOffsets();
+    const maxY = getMaxY();
+    const y = Math.max(offsets.top, Math.min(maxY, clientY));
     lambdaEl.style.top = y + 'px';
     timestampEl.style.top = y + 'px';
-    const yPct = ((y - BAR_TOP) / getBarHeight()) * 100;
+    const yPct = ((y - offsets.top) / getBarHeight()) * 100;
     applyTimelineState(yPct);
-  });
+  }
 
-  window.addEventListener('mouseup', () => {
+  function handleDragEnd() {
     if (lambdaDragging) {
       lambdaDragging = false;
+      const offsets = getBarOffsets();
       const currentY = parseFloat(lambdaEl.style.top);
-      const yPct = ((currentY - BAR_TOP) / getBarHeight()) * 100;
+      const yPct = ((currentY - offsets.top) / getBarHeight()) * 100;
       if (yPct >= maxPct - 0.5) {
         applyTimelineState(maxPct);
       }
     }
+  }
+
+  window.addEventListener('mousemove', (e) => {
+    if (!lambdaDragging) return;
+    handleDragMove(e.clientY);
   });
+
+  window.addEventListener('mouseup', handleDragEnd);
 
   // Touch support for lambda scrubber
   lambdaEl.addEventListener('touchstart', (e) => {
@@ -622,24 +636,35 @@ function renderGraph(data) {
 
   window.addEventListener('touchmove', (e) => {
     if (!lambdaDragging) return;
-    const touch = e.touches[0];
-    const y = Math.max(BAR_TOP, Math.min(maxY, touch.clientY));
-    lambdaEl.style.top = y + 'px';
-    timestampEl.style.top = y + 'px';
-    const yPct = ((y - BAR_TOP) / getBarHeight()) * 100;
-    applyTimelineState(yPct);
-    e.preventDefault();
-  }, { passive: false });
+    handleDragMove(e.touches[0].clientY);
+  });
 
-  window.addEventListener('touchend', () => {
-    if (lambdaDragging) {
-      lambdaDragging = false;
-      const currentY = parseFloat(lambdaEl.style.top);
-      const yPct = ((currentY - BAR_TOP) / getBarHeight()) * 100;
-      if (yPct >= maxPct - 0.5) {
-        applyTimelineState(maxPct);
-      }
-    }
+  window.addEventListener('touchend', handleDragEnd);
+
+  // Resize handler
+  window.addEventListener('resize', () => {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    isMobile = w <= 768;
+    RADIUS = computeRadius();
+
+    svg.attr('width', w).attr('height', h);
+    simulation.force('center', d3.forceCenter(w / 2, h / 2));
+    simulation.force('link').distance(d => {
+      const base = isMobile ? 50 : 115;
+      const short = isMobile ? 40 : 90;
+      return (d.type === 'proves' || d.type === 'depends') ? base : short;
+    });
+    simulation.force('charge').strength(isMobile ? -80 : -320);
+    simulation.force('collision').radius(d => RADIUS[d.category] + (isMobile ? 6 : 16));
+    simulation.force('x').strength(isMobile ? 0.12 : 0.04);
+    simulation.force('y', d3.forceY(d => yTiers[d.category] * h).strength(isMobile ? 0.25 : 0.14));
+    simulation.alpha(0.3).restart();
+
+    const offsets = getBarOffsets();
+    const barH = getBarHeight();
+    const pct = (complete / total) * 100;
+    lambdaEl.style.top = (offsets.top + pct / 100 * barH) + 'px';
   });
 }
 
