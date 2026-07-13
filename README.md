@@ -7,6 +7,47 @@ Each node is a dtype or theorem. Edges show cast relationships (lossless/lossy) 
 ## Access at
 https://smooththunk.github.io/TensorLib-Timeline-Visual/
 
+## Features
+
+### Force-directed graph
+- Dtype nodes (Bool, Integer, Float) and theorem nodes (hexagons) connected by cast and proof-dependency edges
+- Hover any node to highlight its connections and see details
+- Drag nodes to rearrange the layout
+- Responsive to window resize and device orientation changes
+
+### Lambda time-travel scrubber
+- Drag the red **λ** symbol along the progress bar to "time-travel" through the project
+- Nodes appear in topological order as you scrub, showing how the proof lattice was built up
+- PR timeline markers show when major features landed
+
+### Bit layout panel
+- Click any dtype node to see its exact bit layout (sign, exponent, mantissa)
+- Color-coded segments with precision/range details
+
+### Live bit converter
+- Type any number into the converter input and see its exact bit pattern in real time
+- Supports special values: `NaN`, `inf`, `-inf`
+- Shows what value is actually stored after encoding (precision loss is visible)
+
+### Edge cases from Test.lean
+- Click "Edge Cases" on FP16 or BF16 to see every boundary value TensorLib verifies
+- Max values, subnormals, NaN, infinities, rounding, and underflow-to-zero
+- Each case shows pass/fail status with an explanation
+
+### Proof replay
+- Click a theorem node (Add Commutative, BF16 Round-Trip, FP16 Round-Trip, Lossless Antisymmetric, FP16 Add Identity) to see a step-by-step animated walkthrough
+- Shows actual bit patterns at each proof step
+- Navigate with Prev/Next buttons or keyboard (←/→/Esc/Space)
+
+### Citations
+- Nodes with academic references show an orange citation badge
+- Hover to see linked papers (Boldo+2015, IEEE 754-2019)
+
+### Mobile support
+- Responsive layout with smaller nodes and tighter forces on narrow viewports
+- Touch support for the lambda scrubber and node dragging
+- Adapts on orientation change
+
 ## Run locally
 
 ```bash
