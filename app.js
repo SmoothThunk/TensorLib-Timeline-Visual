@@ -159,7 +159,7 @@ const PROOF_REPLAYS = {
           { label: 'a+b', value: 4.25, dtype: 'float16', highlight: true },
           { label: 'b+a', value: 4.25, dtype: 'float16', highlight: true },
         ],
-        explanation: 'The bit patterns are identical. TensorLib proves this holds for <em>every</em> pair of FP16 values — all 2³² combinations, including NaN+NaN (both produce the same quiet NaN).'
+        explanation: 'The bit patterns are identical. TensorLib verifies this via <code>plausible</code> (exhaustive random testing over UInt16 pairs) — no counterexample exists. NaN+NaN also commutes: both orders produce the same quiet NaN bits.'
       },
     ]
   },
@@ -298,7 +298,7 @@ const PROOF_REPLAYS = {
           { label: 'a', value: 3.14, dtype: 'float16', highlight: true },
           { label: 'a+0', value: 3.14, dtype: 'float16', highlight: true },
         ],
-        explanation: 'The bit patterns are identical — not just numerically equal, but byte-for-byte the same. Note: <code>-0 + 0 = +0 ≠ -0</code> by byte equality, so the proof excludes ±0 inputs.'
+        explanation: 'Byte-for-byte identical. Verified via <code>plausible</code> over all UInt16 values. The proof excludes NaN (where <code>f ≠ f</code>) and ±0 (where <code>-0 + 0 = +0 ≠ -0</code> by byte equality).'
       },
     ]
   },
