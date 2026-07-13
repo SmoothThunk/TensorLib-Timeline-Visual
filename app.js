@@ -122,6 +122,188 @@ const EDGE_CASES = {
   ],
 };
 
+const PROOF_REPLAYS = {
+  add_commutative: {
+    title: 'Add Commutative: a + b == b + a',
+    example: { a: 1.5, b: 2.75, dtype: 'float16' },
+    steps: [
+      {
+        label: 'Pick two FP16 values',
+        bits: [
+          { label: 'a', value: 1.5, dtype: 'float16' },
+          { label: 'b', value: 2.75, dtype: 'float16' },
+        ],
+        explanation: 'We choose <code>a = 1.5</code> and <code>b = 2.75</code> as FP16 bit patterns. The theorem holds for ALL bit patterns, including NaN.'
+      },
+      {
+        label: 'Compute a + b',
+        bits: [
+          { label: 'a', value: 1.5, dtype: 'float16' },
+          { label: 'b', value: 2.75, dtype: 'float16' },
+          { label: 'a+b', value: 4.25, dtype: 'float16' },
+        ],
+        explanation: '<code>1.5 + 2.75 = 4.25</code> — the addition is performed at FP16 precision and the result is rounded to the nearest representable value.'
+      },
+      {
+        label: 'Compute b + a',
+        bits: [
+          { label: 'b', value: 2.75, dtype: 'float16' },
+          { label: 'a', value: 1.5, dtype: 'float16' },
+          { label: 'b+a', value: 4.25, dtype: 'float16' },
+        ],
+        explanation: '<code>2.75 + 1.5 = 4.25</code> — same operands, reversed order. Produces an identical bit pattern.'
+      },
+      {
+        label: 'Compare results',
+        bits: [
+          { label: 'a+b', value: 4.25, dtype: 'float16', highlight: true },
+          { label: 'b+a', value: 4.25, dtype: 'float16', highlight: true },
+        ],
+        explanation: 'The bit patterns are identical. TensorLib proves this holds for <em>every</em> pair of FP16 values — all 2³² combinations, including NaN+NaN (both produce the same quiet NaN).'
+      },
+    ]
+  },
+  bf16_roundtrip: {
+    title: 'BF16 Round-Trip: encode → decode → re-encode = identity',
+    example: { value: 42, dtype: 'bfloat16' },
+    steps: [
+      {
+        label: 'Start with raw UInt16 bits',
+        bits: [
+          { label: 'raw', value: 16928, dtype: 'uint16' },
+        ],
+        explanation: 'Take any 16-bit integer — here <code>16928</code> (0x4220). Interpret these bits as a BFloat16 pattern.'
+      },
+      {
+        label: 'Interpret as BF16 → decode to FP32',
+        bits: [
+          { label: 'bf16', value: 40.5, dtype: 'bfloat16' },
+          { label: 'fp32', value: 40.5, dtype: 'float32' },
+        ],
+        explanation: 'The bits <code>0x4220</code> decode to BF16 value <code>40.5</code>. Widening to FP32 is lossless — BF16 is just the top 16 bits of FP32.'
+      },
+      {
+        label: 'Re-encode FP32 → BF16',
+        bits: [
+          { label: 'fp32', value: 40.5, dtype: 'float32' },
+          { label: 'bf16', value: 40.5, dtype: 'bfloat16' },
+        ],
+        explanation: 'Truncating FP32 back to 16 bits gives the exact same BF16 pattern, because no information was added during widening.'
+      },
+      {
+        label: 'Compare: original bits = re-encoded bits',
+        bits: [
+          { label: 'orig', value: 16928, dtype: 'uint16', highlight: true },
+          { label: 'result', value: 40.5, dtype: 'bfloat16', highlight: true },
+        ],
+        explanation: 'The round-trip is exact. TensorLib proves this for all 2¹⁶ possible bit patterns — <em>no</em> UInt16 value loses information through BF16→FP32→BF16.'
+      },
+    ]
+  },
+  fp16_roundtrip: {
+    title: 'FP16 Round-Trip: encode → decode → re-encode = identity',
+    example: { value: 1.5, dtype: 'float16' },
+    steps: [
+      {
+        label: 'Start with raw UInt16 bits',
+        bits: [
+          { label: 'raw', value: 15872, dtype: 'uint16' },
+        ],
+        explanation: 'Take any 16-bit integer — here <code>15872</code> (0x3E00). Interpret these bits as an FP16 pattern.'
+      },
+      {
+        label: 'Interpret as FP16 → decode to FP32',
+        bits: [
+          { label: 'fp16', value: 1.5, dtype: 'float16' },
+          { label: 'fp32', value: 1.5, dtype: 'float32' },
+        ],
+        explanation: 'The bits decode to FP16 value <code>1.5</code>. Widening to FP32 preserves the value exactly — FP32 has a superset of FP16\'s representable values.'
+      },
+      {
+        label: 'Re-encode FP32 → FP16',
+        bits: [
+          { label: 'fp32', value: 1.5, dtype: 'float32' },
+          { label: 'fp16', value: 1.5, dtype: 'float16' },
+        ],
+        explanation: 'Narrowing back to FP16 produces the exact same bit pattern — <code>1.5</code> is representable in both formats.'
+      },
+      {
+        label: 'Bits match: round-trip is identity',
+        bits: [
+          { label: 'orig', value: 15872, dtype: 'uint16', highlight: true },
+          { label: 'result', value: 1.5, dtype: 'float16', highlight: true },
+        ],
+        explanation: 'TensorLib proves this for all 65536 possible UInt16 inputs. Every FP16 bit pattern survives the round-trip through FP32.'
+      },
+    ]
+  },
+  lossless_antisymmetric: {
+    title: 'Lossless Antisymmetric: lossless(A,B) → ¬lossless(B,A)',
+    example: {},
+    steps: [
+      {
+        label: 'Assume lossless(Int8, FP32)',
+        bits: [
+          { label: 'int8', value: 127, dtype: 'int8' },
+          { label: 'fp32', value: 127, dtype: 'float32' },
+        ],
+        explanation: 'Int8→FP32 is lossless: every 8-bit integer fits exactly in a 23-bit mantissa. <code>127</code> → <code>127.0</code> with no information lost.'
+      },
+      {
+        label: 'Try the reverse: FP32 → Int8',
+        bits: [
+          { label: 'fp32', value: 0.5, dtype: 'float32' },
+          { label: 'int8', value: 0, dtype: 'int8' },
+        ],
+        explanation: 'But FP32→Int8 cannot be lossless. <code>0.5</code> has no Int8 representation — it must truncate to <code>0</code>. Information is destroyed.'
+      },
+      {
+        label: 'The contrapositive',
+        bits: [
+          { label: 'fp32', value: 256, dtype: 'float32' },
+          { label: 'int8', value: 0, dtype: 'int8' },
+        ],
+        explanation: 'Even integers fail: <code>256</code> overflows Int8 (max 127). FP32 has values that simply don\'t fit in Int8 — so the reverse cast is necessarily lossy.'
+      },
+      {
+        label: 'Therefore: antisymmetric',
+        bits: [],
+        explanation: 'If type A can losslessly represent all values of type B, then B must have values A cannot represent (otherwise they\'d be the same type). TensorLib proves this structurally for all dtype pairs in the cast lattice.'
+      },
+    ]
+  },
+  fp16_add_identity: {
+    title: 'FP16 Add Identity: a + 0 == a',
+    example: { a: 3.14, dtype: 'float16' },
+    steps: [
+      {
+        label: 'Pick an FP16 value',
+        bits: [
+          { label: 'a', value: 3.14, dtype: 'float16' },
+        ],
+        explanation: 'Choose any non-NaN FP16 value. Here: <code>3.14</code> (rounded to nearest FP16 representable value).'
+      },
+      {
+        label: 'Add zero',
+        bits: [
+          { label: 'a', value: 3.14, dtype: 'float16' },
+          { label: '0', value: 0, dtype: 'float16' },
+          { label: 'a+0', value: 3.14, dtype: 'float16' },
+        ],
+        explanation: 'Adding <code>+0.0</code> to any FP16 value. IEEE 754 guarantees the result equals the input.'
+      },
+      {
+        label: 'Verify bit-exact equality',
+        bits: [
+          { label: 'a', value: 3.14, dtype: 'float16', highlight: true },
+          { label: 'a+0', value: 3.14, dtype: 'float16', highlight: true },
+        ],
+        explanation: 'The bit patterns are identical — not just numerically equal, but byte-for-byte the same. Note: <code>-0 + 0 = +0 ≠ -0</code> by byte equality, so the proof excludes ±0 inputs.'
+      },
+    ]
+  },
+};
+
 function numberToBits(value, dtype) {
   const buf = new ArrayBuffer(8);
   const f64 = new Float64Array(buf);
@@ -266,6 +448,108 @@ function getDecodedValue(bitsStr, dtype) {
     return (sign ? -1 : 1) * (1 + mant / 128) * Math.pow(2, exp - 127);
   }
   return null;
+}
+
+function showProofReplay(theoremId) {
+  const replay = PROOF_REPLAYS[theoremId];
+  if (!replay) return;
+
+  const modal = document.getElementById('proof-replay');
+  const titleEl = document.getElementById('proof-replay-title');
+  const stepEl = document.getElementById('proof-replay-step');
+  const bitsEl = document.getElementById('proof-replay-bits');
+  const explEl = document.getElementById('proof-replay-explanation');
+  const counterEl = document.getElementById('proof-replay-counter');
+  const prevBtn = document.getElementById('proof-replay-prev');
+  const nextBtn = document.getElementById('proof-replay-next');
+
+  titleEl.textContent = replay.title;
+  let currentStep = 0;
+
+  function renderStep(idx) {
+    const step = replay.steps[idx];
+    stepEl.textContent = step.label;
+    explEl.innerHTML = step.explanation;
+    counterEl.textContent = `${idx + 1} / ${replay.steps.length}`;
+    prevBtn.disabled = idx === 0;
+    nextBtn.disabled = idx === replay.steps.length - 1;
+
+    bitsEl.innerHTML = '';
+    step.bits.forEach(row => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'proof-bits-row';
+
+      const labelEl = document.createElement('span');
+      labelEl.className = 'proof-bits-label';
+      labelEl.textContent = row.label;
+      rowEl.appendChild(labelEl);
+
+      const valueEl = document.createElement('div');
+      valueEl.className = 'proof-bits-value';
+
+      const bitsStr = numberToBits(row.value, row.dtype);
+      const layoutDef = BIT_LAYOUTS[row.dtype];
+      if (layoutDef && bitsStr) {
+        let bitIdx = 0;
+        layoutDef.layout.forEach((seg, segIdx) => {
+          for (let i = 0; i < seg.bits; i++) {
+            const span = document.createElement('span');
+            span.className = 'proof-bit' + (row.highlight ? ' highlight' : '');
+            span.style.background = seg.color + '33';
+            span.style.color = seg.color;
+            span.textContent = bitsStr[bitIdx] || '0';
+            valueEl.appendChild(span);
+            bitIdx++;
+          }
+          if (segIdx < layoutDef.layout.length - 1) {
+            const spacer = document.createElement('span');
+            spacer.className = 'proof-bit spacer';
+            valueEl.appendChild(spacer);
+          }
+        });
+      }
+
+      rowEl.appendChild(valueEl);
+      bitsEl.appendChild(rowEl);
+    });
+  }
+
+  prevBtn.onclick = () => {
+    if (currentStep > 0) {
+      currentStep--;
+      renderStep(currentStep);
+    }
+  };
+
+  nextBtn.onclick = () => {
+    if (currentStep < replay.steps.length - 1) {
+      currentStep++;
+      renderStep(currentStep);
+    }
+  };
+
+  document.getElementById('proof-replay-close').onclick = () => {
+    modal.classList.remove('visible');
+  };
+
+  function handleKey(e) {
+    if (!modal.classList.contains('visible')) return;
+    if (e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
+      nextBtn.click();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      prevBtn.click();
+    } else if (e.key === 'Escape') {
+      modal.classList.remove('visible');
+    }
+  }
+  window.removeEventListener('keydown', modal._keyHandler);
+  modal._keyHandler = handleKey;
+  window.addEventListener('keydown', handleKey);
+
+  renderStep(0);
+  modal.classList.add('visible');
 }
 
 function getBarOffsets() {
@@ -681,6 +965,8 @@ function renderGraph(data) {
       };
 
       panel.classList.add('visible');
+    } else if (PROOF_REPLAYS[d.id]) {
+      showProofReplay(d.id);
     } else if (d.pr) {
       window.open(`https://github.com/leanprover/TensorLib/pull/${d.pr}`, '_blank');
     }
