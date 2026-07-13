@@ -355,6 +355,68 @@ body {
   line-height: 1.6;
 }
 
+#bit-converter {
+  margin-top: 14px;
+  display: none;
+}
+
+#bit-converter.visible {
+  display: block;
+}
+
+#bit-converter-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #e0e6f0;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.8rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#bit-converter-input:focus {
+  border-color: rgba(79, 195, 247, 0.5);
+}
+
+#bit-converter-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+#bit-converter-bits {
+  margin-top: 8px;
+  display: flex;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  gap: 1px;
+  flex-wrap: wrap;
+}
+
+.bit-char {
+  width: 16px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  transition: background 0.15s;
+}
+
+.bit-char.spacer {
+  width: 6px;
+  background: none !important;
+}
+
+#bit-converter-info {
+  margin-top: 6px;
+  font-size: 0.68rem;
+  opacity: 0.6;
+  min-height: 1.2em;
+}
+
 #bit-panel-edge-cases {
   position: absolute;
   top: 14px;

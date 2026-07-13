@@ -122,6 +122,152 @@ const EDGE_CASES = {
   ],
 };
 
+function numberToBits(value, dtype) {
+  const buf = new ArrayBuffer(8);
+  const f64 = new Float64Array(buf);
+  const f32 = new Float32Array(buf);
+  const u32 = new Uint32Array(buf);
+  const u8 = new Uint8Array(buf);
+  const i8 = new Int8Array(buf);
+  const i16 = new Int16Array(buf);
+  const u16 = new Uint16Array(buf);
+  const i32 = new Int32Array(buf);
+
+  switch (dtype) {
+    case 'float64': {
+      f64[0] = value;
+      const lo = u32[0], hi = u32[1];
+      return (BigInt(hi) << 32n | BigInt(lo >>> 0)).toString(2).padStart(64, '0');
+    }
+    case 'float32': {
+      f32[0] = value;
+      return (u32[0] >>> 0).toString(2).padStart(32, '0');
+    }
+    case 'float16': {
+      f32[0] = value;
+      const bits = u32[0] >>> 0;
+      const sign = (bits >> 31) & 1;
+      let exp = (bits >> 23) & 0xFF;
+      let mant = bits & 0x7FFFFF;
+      let fp16Exp, fp16Mant;
+      if (exp === 0xFF) {
+        fp16Exp = 0x1F;
+        fp16Mant = mant ? (mant >> 13) | 1 : 0;
+      } else if (exp === 0) {
+        fp16Exp = 0;
+        fp16Mant = 0;
+      } else {
+        const newExp = exp - 127 + 15;
+        if (newExp >= 0x1F) {
+          fp16Exp = 0x1F;
+          fp16Mant = 0;
+        } else if (newExp <= 0) {
+          const shift = 14 - (exp - 127);
+          fp16Mant = shift < 24 ? ((mant | 0x800000) >> shift) >> 13 : 0;
+          fp16Exp = 0;
+        } else {
+          fp16Exp = newExp;
+          fp16Mant = mant >> 13;
+        }
+      }
+      const fp16 = (sign << 15) | (fp16Exp << 10) | fp16Mant;
+      return fp16.toString(2).padStart(16, '0');
+    }
+    case 'bfloat16': {
+      f32[0] = value;
+      const bf16 = (u32[0] >>> 16) & 0xFFFF;
+      return bf16.toString(2).padStart(16, '0');
+    }
+    case 'int8': {
+      i8[0] = Math.max(-128, Math.min(127, Math.round(value)));
+      return u8[0].toString(2).padStart(8, '0');
+    }
+    case 'uint8': {
+      u8[0] = Math.max(0, Math.min(255, Math.round(value)));
+      return u8[0].toString(2).padStart(8, '0');
+    }
+    case 'int16': {
+      i16[0] = Math.max(-32768, Math.min(32767, Math.round(value)));
+      return u16[0].toString(2).padStart(16, '0');
+    }
+    case 'uint16': {
+      u16[0] = Math.max(0, Math.min(65535, Math.round(value)));
+      return u16[0].toString(2).padStart(16, '0');
+    }
+    case 'int32': {
+      i32[0] = Math.round(value);
+      return (u32[0] >>> 0).toString(2).padStart(32, '0');
+    }
+    case 'uint32': {
+      u32[0] = Math.max(0, Math.round(value));
+      return (u32[0] >>> 0).toString(2).padStart(32, '0');
+    }
+    case 'int64': {
+      const n = BigInt(Math.round(value));
+      const bits = BigInt.asUintN(64, n);
+      return bits.toString(2).padStart(64, '0');
+    }
+    case 'uint64': {
+      const n = BigInt(Math.max(0, Math.round(value)));
+      return BigInt.asUintN(64, n).toString(2).padStart(64, '0');
+    }
+    case 'bool': {
+      return (value ? 1 : 0).toString(2).padStart(8, '0');
+    }
+    default:
+      return '';
+  }
+}
+
+function renderBitPattern(bitsStr, layout, container) {
+  container.innerHTML = '';
+  let bitIndex = 0;
+  layout.forEach((seg, segIdx) => {
+    for (let i = 0; i < seg.bits; i++) {
+      const span = document.createElement('span');
+      span.className = 'bit-char';
+      span.style.background = seg.color + '33';
+      span.style.color = seg.color;
+      span.textContent = bitsStr[bitIndex] || '0';
+      container.appendChild(span);
+      bitIndex++;
+    }
+    if (segIdx < layout.length - 1) {
+      const spacer = document.createElement('span');
+      spacer.className = 'bit-char spacer';
+      container.appendChild(spacer);
+    }
+  });
+}
+
+function getDecodedValue(bitsStr, dtype) {
+  if (dtype === 'float16') {
+    const val = parseInt(bitsStr, 2);
+    const sign = (val >> 15) & 1;
+    const exp = (val >> 10) & 0x1F;
+    const mant = val & 0x3FF;
+    if (exp === 0x1F) return mant ? 'NaN' : (sign ? '-∞' : '+∞');
+    if (exp === 0) {
+      if (mant === 0) return sign ? '-0' : '0';
+      return (sign ? -1 : 1) * (mant / 1024) * Math.pow(2, -14);
+    }
+    return (sign ? -1 : 1) * (1 + mant / 1024) * Math.pow(2, exp - 15);
+  }
+  if (dtype === 'bfloat16') {
+    const val = parseInt(bitsStr, 2);
+    const sign = (val >> 15) & 1;
+    const exp = (val >> 7) & 0xFF;
+    const mant = val & 0x7F;
+    if (exp === 0xFF) return mant ? 'NaN' : (sign ? '-∞' : '+∞');
+    if (exp === 0) {
+      if (mant === 0) return sign ? '-0' : '0';
+      return (sign ? -1 : 1) * (mant / 128) * Math.pow(2, -126);
+    }
+    return (sign ? -1 : 1) * (1 + mant / 128) * Math.pow(2, exp - 127);
+  }
+  return null;
+}
+
 function getBarOffsets() {
   const bar = document.getElementById('progress-bar');
   if (bar) {
@@ -494,6 +640,46 @@ function renderGraph(data) {
         ecBtn.classList.remove('visible');
       }
 
+      // Live converter
+      const converter = document.getElementById('bit-converter');
+      const converterInput = document.getElementById('bit-converter-input');
+      const converterBits = document.getElementById('bit-converter-bits');
+      const converterInfo = document.getElementById('bit-converter-info');
+      converter.classList.add('visible');
+      converterInput.value = '';
+      converterBits.innerHTML = '';
+      converterInfo.textContent = '';
+      converterInput.oninput = () => {
+        const raw = converterInput.value.trim();
+        if (!raw) {
+          converterBits.innerHTML = '';
+          converterInfo.textContent = '';
+          return;
+        }
+        let num;
+        if (raw.toLowerCase() === 'nan') num = NaN;
+        else if (raw.toLowerCase() === 'inf' || raw.toLowerCase() === '+inf') num = Infinity;
+        else if (raw.toLowerCase() === '-inf') num = -Infinity;
+        else num = parseFloat(raw);
+
+        if (raw !== '-' && raw !== '.' && isNaN(num) && raw.toLowerCase() !== 'nan') {
+          converterBits.innerHTML = '';
+          converterInfo.textContent = 'Enter a number, NaN, inf, or -inf';
+          return;
+        }
+        const bitsStr = numberToBits(num, d.id);
+        if (!bitsStr) return;
+        renderBitPattern(bitsStr, layout.layout, converterBits);
+
+        const decoded = getDecodedValue(bitsStr, d.id);
+        if (decoded !== null) {
+          const displayVal = typeof decoded === 'number' ? decoded.toPrecision(6) : decoded;
+          converterInfo.textContent = `Stored as: ${displayVal}`;
+        } else {
+          converterInfo.textContent = '';
+        }
+      };
+
       panel.classList.add('visible');
     } else if (d.pr) {
       window.open(`https://github.com/leanprover/TensorLib/pull/${d.pr}`, '_blank');
@@ -546,6 +732,7 @@ function renderGraph(data) {
     document.getElementById('bit-panel').classList.remove('visible');
     document.getElementById('edge-cases-list').classList.remove('visible');
     document.getElementById('bit-panel-edge-cases').classList.remove('visible');
+    document.getElementById('bit-converter').classList.remove('visible');
   });
 
   // PR timeline markers on the progress bar
