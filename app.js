@@ -95,6 +95,33 @@ const THEOREM_DESCRIPTIONS = {
   mixed_precision_bound: "Mechanized error bounds for upcast→compute→downcast mixed-precision pipelines."
 };
 
+const EDGE_CASES = {
+  float16: [
+    { input: '65504.0', result: '65504.0', status: 'pass', note: 'Max representable value' },
+    { input: '0.1', result: '≈0.1 (±0.002)', status: 'pass', note: 'Inexact — rounds to nearest' },
+    { input: '-0.0', result: '0.0', status: 'pass', note: 'IEEE 754: -0.0 == 0.0' },
+    { input: '+∞', result: '+∞', status: 'pass', note: 'Positive infinity preserved' },
+    { input: '-∞', result: '-∞', status: 'pass', note: 'Negative infinity preserved' },
+    { input: 'NaN', result: 'NaN ≠ NaN', status: 'pass', note: 'NaN is never equal to itself' },
+    { input: '2048.5', result: '2048', status: 'pass', note: 'Step size is 2 at this range — rounds down' },
+    { input: '100.5', result: '100.5', status: 'pass', note: 'Exact — fits in mantissa' },
+    { input: '0.00005', result: '≈0.00005', status: 'pass', note: 'Subnormal — near min precision' },
+    { input: '1.16e-10', result: '0.0', status: 'pass', note: 'Below min subnormal → flushes to zero' },
+    { input: '1e-20', result: '0.0', status: 'pass', note: 'Way below min subnormal → zero' },
+    { input: '-1e-20', result: '-0.0', status: 'pass', note: 'Negative underflow → negative zero' },
+    { input: '1e-40', result: '0.0', status: 'pass', note: 'Extreme underflow → zero' },
+  ],
+  bfloat16: [
+    { input: '256.0', result: '256.0', status: 'pass', note: 'Exact power of 2' },
+    { input: '0.1', result: '≈0.1 (±0.01)', status: 'pass', note: 'Inexact — less precision than FP16' },
+    { input: '-0.0', result: '0.0', status: 'pass', note: 'IEEE 754: -0.0 == 0.0' },
+    { input: '+∞', result: '+∞', status: 'pass', note: 'Positive infinity preserved' },
+    { input: '-∞', result: '-∞', status: 'pass', note: 'Negative infinity preserved' },
+    { input: 'NaN', result: 'NaN ≠ NaN', status: 'pass', note: 'NaN is never equal to itself' },
+    { input: '3.39e38', result: '> 3.0e38', status: 'pass', note: 'Near max BF16 value' },
+  ],
+};
+
 function getBarOffsets() {
   const bar = document.getElementById('progress-bar');
   if (bar) {
@@ -436,6 +463,37 @@ function renderGraph(data) {
       }
       document.getElementById('bit-panel-details').innerHTML = details;
 
+      // Edge cases button
+      const ecBtn = document.getElementById('bit-panel-edge-cases');
+      const ecList = document.getElementById('edge-cases-list');
+      ecList.classList.remove('visible');
+      ecList.innerHTML = '';
+      if (EDGE_CASES[d.id]) {
+        ecBtn.classList.add('visible');
+        ecBtn.onclick = () => {
+          if (ecList.classList.contains('visible')) {
+            ecList.classList.remove('visible');
+            return;
+          }
+          ecList.innerHTML = '';
+          EDGE_CASES[d.id].forEach(ec => {
+            const row = document.createElement('div');
+            row.className = 'edge-case-row';
+            row.innerHTML = `
+              <span class="edge-case-status ${ec.status}"></span>
+              <span class="edge-case-input">${ec.input}</span>
+              <span class="edge-case-arrow">→</span>
+              <span class="edge-case-result">${ec.result}</span>
+              <span class="edge-case-note">${ec.note}</span>
+            `;
+            ecList.appendChild(row);
+          });
+          ecList.classList.add('visible');
+        };
+      } else {
+        ecBtn.classList.remove('visible');
+      }
+
       panel.classList.add('visible');
     } else if (d.pr) {
       window.open(`https://github.com/leanprover/TensorLib/pull/${d.pr}`, '_blank');
@@ -486,6 +544,8 @@ function renderGraph(data) {
   // Bit panel close
   document.getElementById('bit-panel-close').addEventListener('click', () => {
     document.getElementById('bit-panel').classList.remove('visible');
+    document.getElementById('edge-cases-list').classList.remove('visible');
+    document.getElementById('bit-panel-edge-cases').classList.remove('visible');
   });
 
   // PR timeline markers on the progress bar
