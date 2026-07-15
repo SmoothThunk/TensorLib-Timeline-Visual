@@ -18,14 +18,7 @@ jobs:
       - name: Fetch merged PRs and update data
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Fetch recent merged PRs from TensorLib
-          gh api repos/leanprover/TensorLib/pulls \
-            --jq '[.[] | select(.merged_at != null)] | sort_by(.merged_at) | reverse | .[0:20]' \
-            -q state=closed > /tmp/prs.json
-
-          # Update lastUpdated timestamp
-          node scripts/update-data.js
+        run: node scripts/update-data.js
 
       - name: Commit if changed
         run: |
