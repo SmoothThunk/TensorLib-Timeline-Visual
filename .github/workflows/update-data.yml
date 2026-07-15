@@ -1,10 +1,6 @@
 name: Update TensorLib Progress
 
 on:
-  # Run on schedule to pick up merged PRs
-  schedule:
-    - cron: '0 */6 * * *'  # every 6 hours
-  # Manual trigger
   workflow_dispatch:
 
 jobs:
