@@ -1,7 +1,7 @@
 {
   "meta": {
     "repo": "leanprover/TensorLib",
-    "lastUpdated": "2026-07-09T00:00:00Z"
+    "lastUpdated": "2026-07-15T21:47:40.892Z"
   },
   "nodes": [
     {
@@ -181,48 +181,263 @@
     }
   ],
   "edges": [
-    { "source": "int8", "target": "bfloat16", "type": "lossless", "verified": true },
-    { "source": "int8", "target": "float16", "type": "lossless", "verified": true },
-    { "source": "int8", "target": "float32", "type": "lossless", "verified": true },
-    { "source": "int8", "target": "int16", "type": "lossless", "verified": true },
-    { "source": "uint8", "target": "bfloat16", "type": "lossless", "verified": true },
-    { "source": "uint8", "target": "float16", "type": "lossless", "verified": true },
-    { "source": "uint8", "target": "float32", "type": "lossless", "verified": true },
-    { "source": "uint8", "target": "uint16", "type": "lossless", "verified": true },
-    { "source": "int16", "target": "float32", "type": "lossless", "verified": true },
-    { "source": "int16", "target": "int32", "type": "lossless", "verified": true },
-    { "source": "uint16", "target": "float32", "type": "lossless", "verified": true },
-    { "source": "uint16", "target": "uint32", "type": "lossless", "verified": true },
-    { "source": "int32", "target": "float64", "type": "lossless", "verified": true },
-    { "source": "int32", "target": "int64", "type": "lossless", "verified": true },
-    { "source": "uint32", "target": "float64", "type": "lossless", "verified": true },
-    { "source": "uint32", "target": "uint64", "type": "lossless", "verified": true },
-    { "source": "float16", "target": "float32", "type": "lossless", "verified": true },
-    { "source": "float16", "target": "float64", "type": "lossless", "verified": true },
-    { "source": "bfloat16", "target": "float32", "type": "lossless", "verified": true },
-    { "source": "bfloat16", "target": "float64", "type": "lossless", "verified": true },
-    { "source": "float32", "target": "float64", "type": "lossless", "verified": true },
-    { "source": "float32", "target": "float16", "type": "lossy", "verified": true },
-    { "source": "float32", "target": "bfloat16", "type": "lossy", "verified": true },
-    { "source": "float64", "target": "float32", "type": "lossy", "verified": true },
-    { "source": "int16", "target": "bfloat16", "type": "lossy", "verified": true },
-    { "source": "bfloat16", "target": "float16", "type": "lossy", "verified": true },
-    { "source": "float16", "target": "bfloat16", "type": "lossy", "verified": true },
-    { "source": "bfloat16", "target": "bf16_roundtrip", "type": "proves", "verified": true },
-    { "source": "float16", "target": "fp16_roundtrip", "type": "proves", "verified": true },
-    { "source": "float16", "target": "add_commutative", "type": "proves", "verified": true },
-    { "source": "bfloat16", "target": "add_commutative", "type": "proves", "verified": true },
-    { "source": "float16", "target": "fp16_add_identity", "type": "proves", "verified": true },
-    { "source": "lossless_antisymmetric", "target": "lossless_cast_roundtrip", "type": "depends", "verified": true },
-    { "source": "self_cast_roundtrip", "target": "lossless_cast_roundtrip", "type": "depends", "verified": true },
-    { "source": "cast_zero_one", "target": "self_cast_roundtrip", "type": "depends", "verified": true },
-    { "source": "lossless_antisymmetric", "target": "cast_roundtrip", "type": "depends", "verified": true },
-    { "source": "lossless_cast_roundtrip", "target": "mixed_precision_bound", "type": "depends", "verified": false },
-    { "source": "cast_roundtrip", "target": "mixed_precision_bound", "type": "depends", "verified": false },
-    { "source": "join_commutative", "target": "mixed_precision_bound", "type": "depends", "verified": false },
-    { "source": "float8", "target": "mixed_precision_bound", "type": "depends", "verified": false },
-    { "source": "float32", "target": "mixed_precision_bound", "type": "depends", "verified": false },
-    { "source": "float16", "target": "mixed_precision_bound", "type": "depends", "verified": false },
-    { "source": "bfloat16", "target": "mixed_precision_bound", "type": "depends", "verified": false }
+    {
+      "source": "int8",
+      "target": "bfloat16",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "int8",
+      "target": "float16",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "int8",
+      "target": "float32",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "int8",
+      "target": "int16",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "uint8",
+      "target": "bfloat16",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "uint8",
+      "target": "float16",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "uint8",
+      "target": "float32",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "uint8",
+      "target": "uint16",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "int16",
+      "target": "float32",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "int16",
+      "target": "int32",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "uint16",
+      "target": "float32",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "uint16",
+      "target": "uint32",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "int32",
+      "target": "float64",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "int32",
+      "target": "int64",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "uint32",
+      "target": "float64",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "uint32",
+      "target": "uint64",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "float16",
+      "target": "float32",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "float16",
+      "target": "float64",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "bfloat16",
+      "target": "float32",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "bfloat16",
+      "target": "float64",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "float32",
+      "target": "float64",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "float32",
+      "target": "float16",
+      "type": "lossy",
+      "verified": true
+    },
+    {
+      "source": "float32",
+      "target": "bfloat16",
+      "type": "lossy",
+      "verified": true
+    },
+    {
+      "source": "float64",
+      "target": "float32",
+      "type": "lossy",
+      "verified": true
+    },
+    {
+      "source": "int16",
+      "target": "bfloat16",
+      "type": "lossy",
+      "verified": true
+    },
+    {
+      "source": "bfloat16",
+      "target": "float16",
+      "type": "lossy",
+      "verified": true
+    },
+    {
+      "source": "float16",
+      "target": "bfloat16",
+      "type": "lossy",
+      "verified": true
+    },
+    {
+      "source": "bfloat16",
+      "target": "bf16_roundtrip",
+      "type": "proves",
+      "verified": true
+    },
+    {
+      "source": "float16",
+      "target": "fp16_roundtrip",
+      "type": "proves",
+      "verified": true
+    },
+    {
+      "source": "float16",
+      "target": "add_commutative",
+      "type": "proves",
+      "verified": true
+    },
+    {
+      "source": "bfloat16",
+      "target": "add_commutative",
+      "type": "proves",
+      "verified": true
+    },
+    {
+      "source": "float16",
+      "target": "fp16_add_identity",
+      "type": "proves",
+      "verified": true
+    },
+    {
+      "source": "lossless_antisymmetric",
+      "target": "lossless_cast_roundtrip",
+      "type": "depends",
+      "verified": true
+    },
+    {
+      "source": "self_cast_roundtrip",
+      "target": "lossless_cast_roundtrip",
+      "type": "depends",
+      "verified": true
+    },
+    {
+      "source": "cast_zero_one",
+      "target": "self_cast_roundtrip",
+      "type": "depends",
+      "verified": true
+    },
+    {
+      "source": "lossless_antisymmetric",
+      "target": "cast_roundtrip",
+      "type": "depends",
+      "verified": true
+    },
+    {
+      "source": "lossless_cast_roundtrip",
+      "target": "mixed_precision_bound",
+      "type": "depends",
+      "verified": false
+    },
+    {
+      "source": "cast_roundtrip",
+      "target": "mixed_precision_bound",
+      "type": "depends",
+      "verified": false
+    },
+    {
+      "source": "join_commutative",
+      "target": "mixed_precision_bound",
+      "type": "depends",
+      "verified": false
+    },
+    {
+      "source": "float8",
+      "target": "mixed_precision_bound",
+      "type": "depends",
+      "verified": false
+    },
+    {
+      "source": "float32",
+      "target": "mixed_precision_bound",
+      "type": "depends",
+      "verified": false
+    },
+    {
+      "source": "float16",
+      "target": "mixed_precision_bound",
+      "type": "depends",
+      "verified": false
+    },
+    {
+      "source": "bfloat16",
+      "target": "mixed_precision_bound",
+      "type": "depends",
+      "verified": false
+    }
   ]
 }
