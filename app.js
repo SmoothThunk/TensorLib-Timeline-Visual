@@ -84,10 +84,10 @@ const CITATIONS = {
 const THEOREM_DESCRIPTIONS = {
   lossless_antisymmetric: "If type A casts losslessly to B, then B cannot cast losslessly back to A.",
   cast_roundtrip: "Casting any value to another dtype and back preserves the original.",
-  bf16_roundtrip: "Encoding a UInt16 as BF16, decoding to Float32, and re-encoding gives the same bits.",
-  fp16_roundtrip: "Encoding a UInt16 as FP16, decoding to Float32, and re-encoding gives the same bits.",
-  add_commutative: "a + b == b + a for all bit patterns (including NaN and special values).",
-  fp16_add_identity: "a + 0 == a for all non-NaN FP16 values (±0 excluded from byte equality).",
+  bf16_roundtrip: "Encoding a UInt16 as BF16, decoding to Float32, and re-encoding gives the same bits (checked via plausible; not yet a completed proof).",
+  fp16_roundtrip: "Encoding a UInt16 as FP16, decoding to Float32, and re-encoding gives the same bits (checked via plausible; not yet a completed proof).",
+  add_commutative: "a + b == b + a for FP16/BF16 bit patterns, NaN included (checked via plausible; not yet a completed proof).",
+  fp16_add_identity: "a + 0 == a for non-NaN FP16 values, ±0 excluded (checked via plausible; not yet a completed proof).",
   self_cast_roundtrip: "Casting any value to its own dtype and back is always identity.",
   lossless_cast_roundtrip: "If lossless(from, to) holds, then cast(from→to→from) preserves the value.",
   cast_zero_one: "0 and 1 round-trip correctly between any two dtype pairs.",
@@ -133,7 +133,7 @@ const PROOF_REPLAYS = {
           { label: 'a', value: 1.5, dtype: 'float16' },
           { label: 'b', value: 2.75, dtype: 'float16' },
         ],
-        explanation: 'We choose <code>a = 1.5</code> and <code>b = 2.75</code> as FP16 bit patterns. The theorem holds for ALL bit patterns, including NaN.'
+        explanation: 'We choose <code>a = 1.5</code> and <code>b = 2.75</code> as FP16 bit patterns. The property is checked across bit patterns, including NaN (no counterexample found).'
       },
       {
         label: 'Compute a + b',
@@ -159,7 +159,7 @@ const PROOF_REPLAYS = {
           { label: 'a+b', value: 4.25, dtype: 'float16', highlight: true },
           { label: 'b+a', value: 4.25, dtype: 'float16', highlight: true },
         ],
-        explanation: 'The bit patterns are identical. TensorLib verifies this via <code>plausible</code> (exhaustive random testing over UInt16 pairs) — no counterexample exists. NaN+NaN also commutes: both orders produce the same quiet NaN bits.'
+        explanation: 'The bit patterns are identical. TensorLib checks this via <code>plausible</code> (randomized property testing over UInt16 pairs) — no counterexample found — but it is not yet a completed formal proof (the declaration uses <code>sorry</code>). NaN+NaN also commutes: both orders produce the same quiet NaN bits.'
       },
     ]
   },
@@ -196,7 +196,7 @@ const PROOF_REPLAYS = {
           { label: 'orig', value: 16928, dtype: 'uint16', highlight: true },
           { label: 'result', value: 40.5, dtype: 'bfloat16', highlight: true },
         ],
-        explanation: 'The round-trip is exact. TensorLib proves this for all 2¹⁶ possible bit patterns — <em>no</em> UInt16 value loses information through BF16→FP32→BF16.'
+        explanation: 'The round-trip is exact for the tested inputs. TensorLib checks this via <code>plausible</code> randomized testing over UInt16 (2¹⁶ = 65536 possible patterns) — no counterexample found — but it is not yet a completed formal proof (the declaration uses <code>sorry</code>). NaN is explicitly excluded, since Lean normalizes all NaN bits and they cannot round-trip.'
       },
     ]
   },
@@ -233,7 +233,7 @@ const PROOF_REPLAYS = {
           { label: 'orig', value: 15872, dtype: 'uint16', highlight: true },
           { label: 'result', value: 1.5, dtype: 'float16', highlight: true },
         ],
-        explanation: 'TensorLib proves this for all 65536 possible UInt16 inputs. Every FP16 bit pattern survives the round-trip through FP32.'
+        explanation: 'TensorLib checks this via <code>plausible</code> randomized testing over UInt16 (2¹⁶ = 65536 possible patterns) — no counterexample found — but it is not yet a completed formal proof (the declaration uses <code>sorry</code>). NaN is explicitly excluded, since Lean normalizes all NaN bits and they cannot round-trip.'
       },
     ]
   },
@@ -298,7 +298,7 @@ const PROOF_REPLAYS = {
           { label: 'a', value: 3.14, dtype: 'float16', highlight: true },
           { label: 'a+0', value: 3.14, dtype: 'float16', highlight: true },
         ],
-        explanation: 'Byte-for-byte identical. Verified via <code>plausible</code> over all UInt16 values. The proof excludes NaN (where <code>f ≠ f</code>) and ±0 (where <code>-0 + 0 = +0 ≠ -0</code> by byte equality).'
+        explanation: 'Byte-for-byte identical. Checked via <code>plausible</code> randomized testing over UInt16 — no counterexample found — but it is not yet a completed formal proof (the declaration uses <code>sorry</code>). The property excludes NaN (where <code>f ≠ f</code>) and ±0 (where <code>-0 + 0 = +0 ≠ -0</code> by byte equality).'
       },
     ]
   },
@@ -574,7 +574,7 @@ function renderStats(data) {
   const theorems = data.nodes.filter(n => n.category === 'theorem');
   const provenTheorems = theorems.filter(n => n.status === 'complete').length;
   const statsEl = document.getElementById('stats');
-  statsEl.innerHTML = `${complete}/${total} milestones complete &middot; ${provenTheorems}/${theorems.length} theorems proven &middot; <a href="https://github.com/leanprover/TensorLib" target="_blank" style="color:#64b5f6;text-decoration:none;">github.com/leanprover/TensorLib</a>`;
+  statsEl.innerHTML = `${complete}/${total} milestones complete &middot; ${provenTheorems}/${theorems.length} theorems verified &middot; <a href="https://github.com/leanprover/TensorLib" target="_blank" style="color:#64b5f6;text-decoration:none;">github.com/leanprover/TensorLib</a>`;
 
   const pct = (complete / total) * 100;
   const fill = document.getElementById('progress-fill');
