@@ -83,14 +83,14 @@ const CITATIONS = {
 
 const THEOREM_DESCRIPTIONS = {
   lossless_antisymmetric: "If type A casts losslessly to B, then B cannot cast losslessly back to A.",
-  cast_roundtrip: "Casting any value to another dtype and back preserves the original.",
+  cast_roundtrip: "Integer values within range survive casting to another dtype and back (checked via plausible; not yet a completed proof).",
   bf16_roundtrip: "Encoding a UInt16 as BF16, decoding to Float32, and re-encoding gives the same bits (checked via plausible; not yet a completed proof).",
   fp16_roundtrip: "Encoding a UInt16 as FP16, decoding to Float32, and re-encoding gives the same bits (checked via plausible; not yet a completed proof).",
   add_commutative: "a + b == b + a for FP16/BF16 bit patterns, NaN included (checked via plausible; not yet a completed proof).",
   fp16_add_identity: "a + 0 == a for non-NaN FP16 values, ±0 excluded (checked via plausible; not yet a completed proof).",
-  self_cast_roundtrip: "Casting any value to its own dtype and back is always identity.",
-  lossless_cast_roundtrip: "If lossless(from, to) holds, then cast(from→to→from) preserves the value.",
-  cast_zero_one: "0 and 1 round-trip correctly between any two dtype pairs.",
+  self_cast_roundtrip: "Integer values within range survive casting to their own dtype and back (checked via plausible; not yet a completed proof).",
+  lossless_cast_roundtrip: "If lossless(from, to) holds, integer values within range survive cast(from→to→from) (checked via plausible; not yet a completed proof).",
+  cast_zero_one: "0 and 1 round-trip correctly between any two dtype pairs (checked via plausible; not yet a completed proof).",
   join_commutative: "Type promotion is order-independent: join(A,B) == join(B,A).",
   mixed_precision_bound: "Mechanized error bounds for upcast→compute→downcast mixed-precision pipelines."
 };
