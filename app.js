@@ -8,6 +8,10 @@ const COLORS = {
   theorem: '#ffd54f'
 };
 
+function nodeColor(d) {
+  return d.color || COLORS[d.category];
+}
+
 let isMobile = window.innerWidth <= 768;
 
 function computeRadius() {
@@ -678,12 +682,12 @@ function renderGraph(data) {
       g.append('path')
         .attr('class', 'node-fill-bg')
         .attr('d', hexagonPath(r))
-        .attr('fill', COLORS[d.category]);
+        .attr('fill', nodeColor(d));
     } else {
       g.append('circle')
         .attr('class', 'node-fill-bg')
         .attr('r', r)
-        .attr('fill', COLORS[d.category]);
+        .attr('fill', nodeColor(d));
     }
   });
 
@@ -708,7 +712,7 @@ function renderGraph(data) {
       g.append('path')
         .attr('class', 'node-fill-progress')
         .attr('d', hexagonPath(r))
-        .attr('fill', COLORS[d.category])
+        .attr('fill', nodeColor(d))
         .attr('clip-path', `url(#${clipId})`);
     } else {
       // Circular progress arc
@@ -724,7 +728,7 @@ function renderGraph(data) {
       }
       g.append('path')
         .attr('class', 'node-fill-progress')
-        .attr('fill', COLORS[d.category])
+        .attr('fill', nodeColor(d))
         .attr('d', pathD);
     }
   });
@@ -737,14 +741,14 @@ function renderGraph(data) {
       g.append('path')
         .attr('class', 'node-ring')
         .attr('d', hexagonPath(r))
-        .attr('stroke', COLORS[d.category])
-        .style('color', COLORS[d.category]);
+        .attr('stroke', nodeColor(d))
+        .style('color', nodeColor(d));
     } else {
       g.append('circle')
         .attr('class', 'node-ring')
         .attr('r', r)
-        .attr('stroke', COLORS[d.category])
-        .style('color', COLORS[d.category]);
+        .attr('stroke', nodeColor(d))
+        .style('color', nodeColor(d));
     }
   });
 

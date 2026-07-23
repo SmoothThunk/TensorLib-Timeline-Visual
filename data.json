@@ -104,9 +104,18 @@
       "pr": null
     },
     {
+      "id": "fp8_e4m3",
+      "label": "FP8\nE4M3",
+      "category": "float",
+      "color": "#ffa726",
+      "status": "complete",
+      "pr": 95
+    },
+    {
       "id": "fp8_e5m2",
       "label": "FP8\nE5M2",
       "category": "float",
+      "color": "#ffa726",
       "status": "complete",
       "pr": 96
     },
@@ -313,6 +322,18 @@
       "source": "float32",
       "target": "float64",
       "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "fp8_e4m3",
+      "target": "float8",
+      "type": "depends",
+      "verified": true
+    },
+    {
+      "source": "fp8_e5m2",
+      "target": "float8",
+      "type": "depends",
       "verified": true
     },
     {
