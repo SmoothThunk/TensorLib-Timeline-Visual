@@ -61,6 +61,8 @@ const BIT_LAYOUTS = {
   float32: { bits: 32, layout: [{label: 'sign', bits: 1, color: '#ef5350'}, {label: 'exp', bits: 8, color: '#ffa726'}, {label: 'mantissa', bits: 23, color: '#ab47bc'}] },
   float64: { bits: 64, layout: [{label: 'sign', bits: 1, color: '#ef5350'}, {label: 'exp', bits: 11, color: '#ffa726'}, {label: 'mantissa', bits: 52, color: '#ab47bc'}] },
   float8:  { bits: 8,  layout: [{label: 'sign', bits: 1, color: '#ef5350'}, {label: 'exp', bits: 4, color: '#ffa726'}, {label: 'mantissa', bits: 3, color: '#ab47bc'}] },
+  fp8_e4m3:{ bits: 8,  layout: [{label: 'sign', bits: 1, color: '#ef5350'}, {label: 'exp', bits: 4, color: '#ffa726'}, {label: 'mantissa', bits: 3, color: '#ab47bc'}] },
+  fp8_e5m2:{ bits: 8,  layout: [{label: 'sign', bits: 1, color: '#ef5350'}, {label: 'exp', bits: 5, color: '#ffa726'}, {label: 'mantissa', bits: 2, color: '#ab47bc'}] },
 };
 
 const PR_TIMELINE = [
@@ -124,6 +126,33 @@ const EDGE_CASES = {
     { input: '-∞', result: '-∞', status: 'pass', note: 'Negative infinity preserved' },
     { input: 'NaN', result: 'NaN ≠ NaN', status: 'pass', note: 'NaN is never equal to itself' },
     { input: '3.39e38', result: '> 3.0e38', status: 'pass', note: 'Near max BF16 value' },
+  ],
+  fp8_e4m3: [
+    { input: '448.0', result: '448.0', status: 'pass', note: 'Max representable — no infinity in E4M3FN' },
+    { input: '0.1', result: '≈0.1015625', status: 'pass', note: 'Inexact — only 3 mantissa bits' },
+    { input: '-0.0', result: '0.0', status: 'pass', note: '-0 encodes to bits 128, compares equal to +0' },
+    { input: '0.001953125', result: '0.001953125', status: 'pass', note: 'Smallest subnormal (2⁻⁹)' },
+    { input: '1.5', result: '1.5', status: 'pass', note: 'Exact — fits in 3-bit mantissa' },
+    { input: '16.0', result: '16.0', status: 'pass', note: 'maxSafeNat — largest consecutive integer' },
+    { input: '256.0', result: '256.0', status: 'pass', note: 'Exact — 2⁸ (near top of range)' },
+    { input: '460.0', result: '448.0', status: 'pass', note: 'Saturates to max (matches ml_dtypes)' },
+    { input: '465.0', result: 'NaN', status: 'pass', note: 'Overflow → NaN (E4M3FN has no infinity)' },
+    { input: '+∞', result: 'NaN', status: 'pass', note: 'No +∞ encoding — collapses to NaN' },
+    { input: 'NaN', result: 'NaN', status: 'pass', note: 'Bits 127 / 255 are the only NaN patterns' },
+  ],
+  fp8_e5m2: [
+    { input: '57344.0', result: '57344.0', status: 'pass', note: 'Max finite value (exp=30, mantissa=3)' },
+    { input: '0.1', result: '≈0.09375', status: 'pass', note: 'Inexact — only 2 mantissa bits' },
+    { input: '-0.0', result: '0.0', status: 'pass', note: 'IEEE 754: -0.0 == 0.0' },
+    { input: '1.526e-5', result: '1.526e-5', status: 'pass', note: 'Smallest subnormal (2⁻¹⁶)' },
+    { input: '1.5', result: '1.5', status: 'pass', note: 'Exact' },
+    { input: '2.0', result: '2.0', status: 'pass', note: 'Exact power of 2' },
+    { input: '8.0', result: '8.0', status: 'pass', note: 'maxSafeNat — largest consecutive integer' },
+    { input: '60000.0', result: '57344.0', status: 'pass', note: 'Saturates to max (< 65535 threshold)' },
+    { input: '65536.0', result: '+∞', status: 'pass', note: 'Overflow → +∞ (unlike E4M3, E5M2 has infinity)' },
+    { input: '+∞', result: '+∞', status: 'pass', note: 'Positive infinity preserved' },
+    { input: '-∞', result: '-∞', status: 'pass', note: 'Negative infinity preserved' },
+    { input: 'NaN', result: 'NaN', status: 'pass', note: 'NaN preserved' },
   ],
 };
 
@@ -365,6 +394,85 @@ function numberToBits(value, dtype) {
       const bf16 = (u32[0] >>> 16) & 0xFFFF;
       return bf16.toString(2).padStart(16, '0');
     }
+    case 'fp8_e5m2': {
+      // E5M2: 1 sign + 5 exp (bias 15) + 2 mantissa. Has inf and NaN.
+      f32[0] = value;
+      const bits = u32[0] >>> 0;
+      const sign = (bits >> 31) & 1;
+      const exp = (bits >> 23) & 0xFF;
+      const mant = bits & 0x7FFFFF;
+      let e5m2Exp, e5m2Mant;
+      if (exp === 0xFF) {
+        e5m2Exp = 0x1F;
+        e5m2Mant = mant ? 1 : 0;
+      } else if (exp === 0) {
+        e5m2Exp = 0;
+        e5m2Mant = 0;
+      } else {
+        const newExp = exp - 127 + 15;
+        if (newExp >= 0x1F) {
+          if (isFinite(value) && Math.abs(value) < 65535) {
+            e5m2Exp = 0x1E;
+            e5m2Mant = 0x3;
+          } else {
+            e5m2Exp = 0x1F;
+            e5m2Mant = 0;
+          }
+        } else if (newExp <= 0) {
+          const shift = 14 - (exp - 127);
+          e5m2Mant = shift < 24 ? ((mant | 0x800000) >> shift) >> 21 : 0;
+          e5m2Exp = 0;
+        } else {
+          e5m2Exp = newExp;
+          e5m2Mant = mant >> 21;
+        }
+      }
+      const fp8 = ((sign << 7) | (e5m2Exp << 2) | e5m2Mant) & 0xFF;
+      return fp8.toString(2).padStart(8, '0');
+    }
+    case 'fp8_e4m3': {
+      // E4M3FN: 1 sign + 4 exp (bias 7) + 3 mantissa. No inf; bits 127/255 = NaN. Max = 448.
+      f32[0] = value;
+      const bits = u32[0] >>> 0;
+      const sign = (bits >> 31) & 1;
+      const exp = (bits >> 23) & 0xFF;
+      const mant = bits & 0x7FFFFF;
+      let e4m3Exp, e4m3Mant;
+      if (isNaN(value)) {
+        return ((sign << 7) | 0x7F).toString(2).padStart(8, '0');
+      }
+      if (!isFinite(value) || Math.abs(value) >= 465) {
+        return ((sign << 7) | 0x7F).toString(2).padStart(8, '0');
+      }
+      if (Math.abs(value) > 448) {
+        e4m3Exp = 0xF;
+        e4m3Mant = 0x6;
+      } else if (exp === 0) {
+        e4m3Exp = 0;
+        e4m3Mant = 0;
+      } else {
+        const newExp = exp - 127 + 7;
+        if (newExp >= 0xF) {
+          const m = mant >> 20;
+          if (newExp === 0xF && m < 7) {
+            e4m3Exp = 0xF;
+            e4m3Mant = m;
+          } else {
+            e4m3Exp = 0xF;
+            e4m3Mant = 0x6;
+          }
+        } else if (newExp <= 0) {
+          const shift = 6 - (exp - 127);
+          e4m3Mant = shift < 24 ? ((mant | 0x800000) >> shift) >> 20 : 0;
+          e4m3Exp = 0;
+        } else {
+          e4m3Exp = newExp;
+          e4m3Mant = mant >> 20;
+        }
+      }
+      const fp8 = ((sign << 7) | (e4m3Exp << 3) | e4m3Mant) & 0xFF;
+      return fp8.toString(2).padStart(8, '0');
+    }
     case 'int8': {
       i8[0] = Math.max(-128, Math.min(127, Math.round(value)));
       return u8[0].toString(2).padStart(8, '0');
@@ -451,6 +559,31 @@ function getDecodedValue(bitsStr, dtype) {
       return (sign ? -1 : 1) * (mant / 128) * Math.pow(2, -126);
     }
     return (sign ? -1 : 1) * (1 + mant / 128) * Math.pow(2, exp - 127);
+  }
+  if (dtype === 'fp8_e5m2') {
+    const val = parseInt(bitsStr, 2);
+    const sign = (val >> 7) & 1;
+    const exp = (val >> 2) & 0x1F;
+    const mant = val & 0x3;
+    if (exp === 0x1F) return mant ? 'NaN' : (sign ? '-∞' : '+∞');
+    if (exp === 0) {
+      if (mant === 0) return sign ? '-0' : '0';
+      return (sign ? -1 : 1) * (mant / 4) * Math.pow(2, -14);
+    }
+    return (sign ? -1 : 1) * (1 + mant / 4) * Math.pow(2, exp - 15);
+  }
+  if (dtype === 'fp8_e4m3') {
+    const val = parseInt(bitsStr, 2);
+    const sign = (val >> 7) & 1;
+    const exp = (val >> 3) & 0xF;
+    const mant = val & 0x7;
+    // E4M3FN: only NaN encodings are 0x7F and 0xFF (exp=15, mant=7), no infinity
+    if (exp === 0xF && mant === 0x7) return 'NaN';
+    if (exp === 0) {
+      if (mant === 0) return sign ? '-0' : '0';
+      return (sign ? -1 : 1) * (mant / 8) * Math.pow(2, -6);
+    }
+    return (sign ? -1 : 1) * (1 + mant / 8) * Math.pow(2, exp - 7);
   }
   return null;
 }
