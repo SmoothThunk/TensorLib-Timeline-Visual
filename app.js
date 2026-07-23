@@ -62,6 +62,7 @@ const BIT_LAYOUTS = {
 const PR_TIMELINE = [
   { pr: 92, title: "Float16 support", date: "2026-06" },
   { pr: 94, title: "BFloat16 support", date: "2026-07" },
+  { pr: 96, title: "FP8 E5M2 support", date: "2026-07" },
 ];
 
 const CITATIONS = {
@@ -690,7 +691,8 @@ function renderGraph(data) {
   node.each(function(d) {
     const g = d3.select(this);
     const r = RADIUS[d.category];
-    const progress = d.status === 'complete' ? 1 :
+    const progress = typeof d.progress === 'number' ? d.progress :
+                     d.status === 'complete' ? 1 :
                      d.status === 'in_progress' ? 0.6 : 0;
     if (progress === 0) return;
 

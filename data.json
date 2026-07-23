@@ -1,7 +1,7 @@
 {
   "meta": {
     "repo": "leanprover/TensorLib",
-    "lastUpdated": "2026-07-15T21:47:40.892Z"
+    "lastUpdated": "2026-07-23T00:10:54Z"
   },
   "nodes": [
     {
@@ -99,8 +99,16 @@
       "id": "float8",
       "label": "FP8",
       "category": "float",
-      "status": "planned",
+      "status": "in_progress",
+      "progress": 0.4,
       "pr": null
+    },
+    {
+      "id": "fp8_e5m2",
+      "label": "FP8\nE5M2",
+      "category": "float",
+      "status": "complete",
+      "pr": 96
     },
     {
       "id": "lossless_antisymmetric",
@@ -305,6 +313,54 @@
       "source": "float32",
       "target": "float64",
       "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "fp8_e5m2",
+      "target": "float16",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "fp8_e5m2",
+      "target": "bfloat16",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "fp8_e5m2",
+      "target": "float32",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "fp8_e5m2",
+      "target": "float64",
+      "type": "lossless",
+      "verified": true
+    },
+    {
+      "source": "float16",
+      "target": "fp8_e5m2",
+      "type": "lossy",
+      "verified": true
+    },
+    {
+      "source": "bfloat16",
+      "target": "fp8_e5m2",
+      "type": "lossy",
+      "verified": true
+    },
+    {
+      "source": "float32",
+      "target": "fp8_e5m2",
+      "type": "lossy",
+      "verified": true
+    },
+    {
+      "source": "float64",
+      "target": "fp8_e5m2",
+      "type": "lossy",
       "verified": true
     },
     {
